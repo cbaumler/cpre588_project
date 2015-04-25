@@ -12,14 +12,14 @@ import "c_double_handshake";	// import the standard channel
 
 behavior Main
 {
-	c_double_handshake c_tx_in;
-	c_double_handshake c_tx_out;
+	c_double_handshake c_transaction_in;
+	c_double_handshake c_transaction_out;
 	c_double_handshake c_profile;
 	c_double_handshake c_performance;
 
-	Stimulus stimulus(c_tx_in, c_profile);
-	Design design(c_tx_in, c_tx_out, c_profile, c_performance);
-	Monitor monitor(c_tx_out, c_performance);
+	Stimulus stimulus(c_transaction_in, c_profile);
+	Design design(c_transaction_in, c_transaction_out, c_profile, c_performance);
+	Monitor monitor(c_transaction_out, c_performance);
 
 	int main (void)
 	{

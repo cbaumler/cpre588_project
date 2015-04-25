@@ -10,7 +10,7 @@
 
 import "c_double_handshake";	// import the standard channel
 
-behavior Monitor(i_receiver c_profile, i_receiver c_performance)
+behavior Monitor(i_receiver c_transaction_out, i_receiver c_performance)
 {
 
   void main(void)

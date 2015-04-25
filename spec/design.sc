@@ -11,46 +11,29 @@ import "miningsw";
 import "mininghw";
 import "c_double_handshake";	// import the standard channel
 
-behavior Design(i_receiver core_in, i_sender core_out,
-  i_receiver mininghw_in, i_sender mininghw_out)
+behavior Design(i_receiver c_transaction_in, i_sender c_transaction_out,
+  i_receiver c_profile, i_sender c_performance)
 {
   // Channels
 
   // Wallet - Core Channels
-  c_double_handshake c_gettxout;
-  c_double_handshake c_gettxoutsetinfo;
-  c_double_handshake c_createrawtransaction;
-  c_double_handshake c_sendrawtransaction;
-  c_double_handshake c_signrawtransaction;
+  c_double_handshake c_wallet_in;
+  c_double_handshake c_wallet_out;
 
   // Core - Software Miner Channels
-  c_double_handshake c_getblocktemplate;
-  c_double_handshake c_submitblock;
-  c_double_handshake c_getblockcount;
+  c_double_handshake c_swminer_in;
+  c_double_handshake c_swminer_out;
 
   // Software Miner - Hardware Miner Channels
   c_double_handshake c_blk_hdr;
   c_double_handshake c_nonce;
 
-  // Stimulus - Design Channels
-  c_double_handshake c_tx_in;
-  c_double_handshake c_profile;
-
-  // Design - Monitor Channels
-  c_double_handshake c_tx_out;
-  c_double_handshake c_performance;
-
   // Behaviors
 
-  Wallet wallet(c_gettxout, c_gettxoutsetinfo, c_createrawtransaction,
-    c_sendrawtransaction, c_signrawtransaction);
-
-  Core core(c_gettxout, c_gettxoutsetinfo, c_createrawtransaction,
-    c_sendrawtransaction, c_signrawtransaction, c_getblocktemplate,
-    c_submitblock, c_getblockcount, c_tx_in, c_tx_out);
-
+  Wallet wallet(c_wallet_in, c_wallet_out);
+  Core core(c_wallet_in, c_wallet_out, c_swminer_in, c_swminer_out,
+    c_transaction_in, c_transaction_out);
   MiningSW miningsw(c_blk_hdr, c_nonce);
-
   MiningHW mininghw(c_blk_hdr, c_nonce, c_profile, c_performance);
 
   void main(void)

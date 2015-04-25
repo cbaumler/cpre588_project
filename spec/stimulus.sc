@@ -11,7 +11,7 @@
 
 import "c_double_handshake";	// import the standard channel
 
-behavior Stimulus(i_sender c_tx_in, i_sender c_profile)
+behavior Stimulus(i_sender c_transaction_in, i_sender c_profile)
 {
   void main (void)
   {
