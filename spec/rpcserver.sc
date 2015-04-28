@@ -5,15 +5,24 @@
 *  Description: Remote Procedure Call (RPC) Server Behavior
 ****************************************************************************/
 
+#include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 #include "coreapi.h"
 
 import "c_double_handshake";	// import the standard double handshake channel
 import "c_mutex";	            // import the standard mutex channel
 
-behavior RPCServer (i_receiver c_request, i_sender c_response,
-  Blockchain *blockchain, TransactionPool *transaction_pool,
-  in int target_threshold, in event start_servers, i_semaphore block_mutex,
+behavior RPCServer (
+  i_receiver c_request,
+  i_sender c_response,
+  in Blockchain bc_in,
+  out Blockchain bc_out,
+  in TransactionPool pool_in,
+  out TransactionPool pool_out,
+  in int target_threshold,
+  in event start_servers,
+  i_semaphore block_mutex,
   i_semaphore pool_mutex)
 {
 
@@ -21,21 +30,21 @@ behavior RPCServer (i_receiver c_request, i_sender c_response,
   {
     int idx;
     BlockTemplate *p;
-    p = &(packet.data.blocktemplate);
+    p = &(packet->data.blocktemplate);
 
     p->version = BLOCK_VERSION;
 
     block_mutex.acquire();
-    p->previous_block_hash = blockchain->entries[blockchain->head_block].hash;
+    p->previous_block_hash = bc_in.entries[bc_in.head_block].hash;
     block_mutex.release();
 
     pool_mutex.acquire();
-    for (idx = 0; idx < transaction_pool->n_in_pool; idx++)
+    for (idx = 0; idx < pool_in.n_in_pool; idx++)
     {
       // Copy transaction from pool into packet payload
-      memcpy(&(p->transactions[idx]), &(transaction_pool->pool[idx]), sizeof(Transaction));
+      memcpy(&(p->transactions[idx]), &(pool_in.pool[idx]), sizeof(Transaction));
     }
-    transaction_pool->n_in_pool = 0;
+    pool_out.n_in_pool = 0;
     pool_mutex.release();
 
     p->current_time = (int)time(0);
@@ -54,16 +63,16 @@ behavior RPCServer (i_receiver c_request, i_sender c_response,
     block_mutex.acquire();
 
     // Search for the output in the blockchain
-    for (idx1 = 0; idx1 <= blockchain->head_block; idx1++)
+    for (idx1 = 0; idx1 <= bc_in.head_block; idx1++)
     {
-      for (idx2 = 0; idx2 < blockchain->entries[idx1].n_transactions)
+      for (idx2 = 0; idx2 < bc_in.entries[idx1].n_transactions; idx2++)
       {
-        if (blockchain->entries[idx1].transactions[idx2].txid == packet.data.txout.txid)
+        if (bc_in.entries[idx1].transactions[idx2].txid == packet->data.txout.txid)
         {
           // Copy the transaction output data
-          packet.data.txout.best_block = blockchain->entries[idx1].hash;
-          packet.data.txout.value = blockchain->entries[idx1].transactions[idx2].amount;
-          packet.data.txout.address = blockchain->entries[idx1].transactions[idx2].address;
+          packet->data.txout.best_block = bc_in.entries[idx1].hash;
+          packet->data.txout.value = bc_in.entries[idx1].transactions[idx2].amount;
+          packet->data.txout.address = bc_in.entries[idx1].transactions[idx2].address;
           break;
         }
       }
@@ -92,16 +101,16 @@ behavior RPCServer (i_receiver c_request, i_sender c_response,
       // Read the header and make an appropriate response
       switch (packet.type)
       {
-        case GET_BLOCK_TEMPLATE_REQ:
+        case GET_BLOCK_TEMPLATE:
         {
           // Create a block template payload
           create_block_template(&packet);
           break;
         }
-        case GET_BLOCK_COUNT_REQ:
+        case GET_BLOCK_COUNT:
         {
           // Create a block count payload
-          packet.block_count = head_block+1;
+          packet.data.block_count = (bc_in.head_block)+1;
           break;
         }
         case SUBMIT_BLOCK:
@@ -110,18 +119,10 @@ behavior RPCServer (i_receiver c_request, i_sender c_response,
           // TODO: transmit block to the network?
           // Add the new block to the blockchain
           block_mutex.acquire();
-          blockchain->head_block++;
-          memcpy(&(blockchain->entries[blockchain->head_block]),
+          bc_out.head_block = bc_in.head_block + 1;
+          memcpy(&(bc_out.entries[bc_in.head_block]),
             &(packet.data.block), sizeof(Block));
           block_mutex.release();
-        }
-        case GET_TX_OUT:
-        {
-          break;
-        }
-        case GET_TX_OUT_SET_INFO:
-        {
-          break;
         }
         case GET_TX_OUT_SET_INFO:
         {
@@ -143,7 +144,8 @@ behavior RPCServer (i_receiver c_request, i_sender c_response,
           packet.data.transaction.output.vout = 0;
 
           // Create representative raw transaction by summing id and address
-          packet.data.transaction.raw_transaction = packet.data.transaction.txid + address;
+          packet.data.transaction.raw_transaction = packet.data.transaction.txid +
+            packet.data.transaction.address;
 
           // Create a local copy of the transaction
           memcpy(&local_transaction_copy, &(packet.data.transaction), sizeof(Transaction));
@@ -174,11 +176,11 @@ behavior RPCServer (i_receiver c_request, i_sender c_response,
           {
             // Add the transaction to the transaction pool
             pool_mutex.acquire();
-            if ((transaction_pool->n_in_pool) < MAX_TRANSACTIONS)
+            if ((pool_in.n_in_pool) < MAX_TRANSACTIONS)
             {
-              memcpy(&(transaction_pool->pool[transaction_pool->n_in_pool]),
+              memcpy(&(pool_out.pool[pool_in.n_in_pool]),
                 &(local_transaction_copy), sizeof(Transaction));
-              transaction_pool->n_in_pool++;
+              pool_out.n_in_pool = pool_in.n_in_pool + 1;
             }
             pool_mutex.release();
           }

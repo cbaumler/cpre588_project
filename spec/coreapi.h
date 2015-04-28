@@ -6,75 +6,121 @@
 *               simplified per the scope of this project.
 ****************************************************************************/
 
+#define BLOCK_VERSION       2
 #define MAX_TRANSACTIONS   10
+#define BLOCKCHAIN_MAX     64
 
 // These are the types of RPC messages
 typedef enum
 {
   // Mining API
-  GET_BLOCK_TEMPLATE_REQ,
-  GET_BLOCK_TEMPLATE_RESP,
-  GET_BLOCK_COUNT_REQ,
-  GET_BLOCK_COUNT_RESP,
+  GET_BLOCK_TEMPLATE,
+  GET_BLOCK_COUNT,
   SUBMIT_BLOCK,
 
   // Wallet API
   GET_TX_OUT,
   GET_TX_OUT_SET_INFO,
   CREATE_RAW_TRANSACTION,
-  SEND_RAW_TRANSACTION,
-  SIGN_RAW_TRANSACTION
+  SIGN_RAW_TRANSACTION,
+  SEND_RAW_TRANSACTION
 
 } RPCType;
 
-// Simplified Bitcoin transaction type
+// A data structure used to refer to a particular transaction output
 typedef struct
 {
-  int txid;
+  int txid; // ID of transaction where this output appears as unspent (UTXO)
+  int vout; // Output index number
+
+} Outpoint;
+
+// Representative Bitcoin transaction type
+// Transactions have been simplified to only allow one input/output and
+// one address/amount per transaction to reduce project scope
+typedef struct
+{
+  int txid;               // The transaction identifier
+  Outpoint input;         // The transaction input
+  Outpoint output;        // The transaction output
+  int address;            // The address to which Bitcoins are sent
+  int amount;             // Amount being sent to the address
+  int private_key;        // Private key used to sign transaction.
+  int raw_transaction;    // Representative type for the raw transaction
+  int signed_transaction; // Representative type for the signed transaction
 
 } Transaction;
 
-// Simplified Bitcoin block type
+// A data structure containing statistics about the confirmed unspent
+// transaction output (UTXO) set
 typedef struct
 {
-  int hash;
-  Transaction transactions[MAX_TRANSACTIONS];
+  int height;        // The height of the local best block chain
+                     // A new node with only the hardcoded genesis block will
+                     // have a height of 0
+  int best_block;    // The hash of the header of the highest block on the
+                     // local best blockchain
+  int transactions;  // The number of transactions with unspent outputs
+  int txouts;        // The number of unspent transaction outputs
+  int total_amount;  // The total number of bitcoins in the UTXO set
+
+} TxOutSetInfo;
+
+// A data structure containing details about a transaction output
+typedef struct
+{
+  int best_block;    // The hash of the header of the block on the local best
+                     // blockchain which includes this transaction
+  int value;         // The amount spent to this output. May be 0.
+  int address;       // The address to which Bitcoins were sent
+  int txid;          // The transaction ID containing the output
+  int vout;          // The index of the output within the transaction
+
+} TxOut;
+
+// Representative Bitcoin block type
+typedef struct
+{
+  int hash;                                     // Hash of block header
+  Transaction transactions[MAX_TRANSACTIONS];   // Transactions in block
+  int n_transactions;                           // Number of transactions
 
 } Block;
 
-// Requests a block template for use with mining software
-// When submitting a request, only "id" needs to be assigned a value
 typedef struct
 {
-  int id;
-  int version;
-  int previous_block_hash;
-  int num_transactions;
-  Transaction transactions[MAX_TRANSACTIONS];
-  int current_time;
-  int bits;
+  Block entries[BLOCKCHAIN_MAX];
+  int head_block;
 
-} GetBlockTemplate;
+} Blockchain;
 
-// Returns the number of blocks in the local best block chain
 typedef struct
 {
-  int block_count;
+  Transaction pool[MAX_TRANSACTIONS];
+  int n_in_pool;
 
-} GetBlockCount;
+} TransactionPool;
 
-// Accepts a block, verifies it, and broadcasts it to the network
+// A block template for use with mining software
 typedef struct
 {
-  Block block;
+  int version;                                 // Bitcoin protocol version
+  int previous_block_hash;                     // Hash of previous block header
+  int num_transactions;                        // Number of transactions available
+  Transaction transactions[MAX_TRANSACTIONS];  // Array of transactions
+  int current_time;                            // Timestamp
+  int bits;                                    // Difficulty threshold
 
-} SubmitBlock;
+} BlockTemplate;
 
 typedef union
 {
-  GetBlockTemplate getblocktemplate;
-  GetBlockCount getblockcount;
-  SubmitBlock submitblock;
+  BlockTemplate blocktemplate;
+  int block_count;
+  Block block;
+  Transaction transaction;
+  TxOutSetInfo txoutsetinfo;
+  TxOut txout;
 
 } RPCData;
 

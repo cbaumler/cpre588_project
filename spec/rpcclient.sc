@@ -5,10 +5,12 @@
 *  Description: Remote Procedure Call (RPC) Client Behavior
 ****************************************************************************/
 
+#include <stdlib.h>
 #include <stdio.h>
 #include "coreapi.h"
 
-import "c_double_handshake";	// import the standard channel
+import "c_double_handshake";	// import the standard double handshake channel
+import "c_mutex";	            // import the standard mutex channel
 
 behavior RPCClient (i_sender c_request, i_receiver c_response)
 {
