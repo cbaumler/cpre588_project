@@ -112,6 +112,7 @@ behavior RPCServer (
   void build_txout (RPCMessage *packet)
   {
     int idx1, idx2;
+    bool found_txout = false;
 
     block_mutex.acquire();
 
@@ -126,6 +127,7 @@ behavior RPCServer (
           packet->data.txout.best_block = bc_in.entries[idx1].hash;
           packet->data.txout.value = bc_in.entries[idx1].transactions[idx2].amount;
           packet->data.txout.address = bc_in.entries[idx1].transactions[idx2].address;
+          found_txout = true;
           break;
         }
       }
@@ -133,6 +135,11 @@ behavior RPCServer (
     }
 
     block_mutex.release();
+
+    if (!found_txout)
+    {
+      packet->data.txout.txid = -1;
+    }
   }
 
   void main (void)

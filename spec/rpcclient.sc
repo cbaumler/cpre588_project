@@ -179,7 +179,7 @@ behavior RPCClient (i_sender c_request, i_receiver c_response) implements IClien
     c_request.send(&packet, sizeof(packet));
     c_response.receive(&packet, sizeof(packet));
 
-    if (packet.type == GET_TX_OUT)
+    if ((packet.type == GET_TX_OUT) && (packet.data.txout.txid != -1))
     {
       memcpy(p_txout, &(packet.data.txout), sizeof(TxOut));
       result = 1;
