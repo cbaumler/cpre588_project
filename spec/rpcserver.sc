@@ -53,7 +53,60 @@ behavior RPCServer (
 
   void build_utxo_set (RPCMessage *packet)
   {
-    // TODO: Complete this function
+    int idx1, idx2, idx3, idx4;
+    int output_txid, input_txid;
+    int value;
+    bool spent;
+
+    block_mutex.acquire();
+
+    packet->data.txoutsetinfo.height = bc_in.head_block;
+    packet->data.txoutsetinfo.best_block = bc_in.entries[bc_in.head_block].hash;
+
+    // Loop through each block in the blockchain
+    for (idx1 = 0; idx1 <= bc_in.head_block; idx1++)
+    {
+      // Loop through each transaction in the block
+      for (idx2 = 0; idx2 < bc_in.entries[idx1].n_transactions; idx2++)
+      {
+        // Find the output's transaction ID
+        output_txid = bc_in.entries[idx1].transactions[idx2].output.txid;
+        value = bc_in.entries[idx1].transactions[idx2].amount;
+        spent = false;
+
+        // Compare the output's transaction ID to all inputs' transaction IDs
+        for (idx3 = 0; idx3 <= bc_in.head_block; idx3++)
+        {
+          for (idx4 = 0; idx4 < bc_in.entries[idx3].n_transactions; idx4++)
+          {
+            input_txid = bc_in.entries[idx3].transactions[idx4].input.txid;
+            if (output_txid == input_txid)
+            {
+              spent = true;
+            }
+          }
+        }
+
+        // If the output is not spent, add it to the UTXO set
+        if (!spent)
+        {
+          // Add the UTXO to the set
+          packet->data.txoutsetinfo.utxo[packet->data.txoutsetinfo.txouts].txid = output_txid;
+          packet->data.txoutsetinfo.utxo[packet->data.txoutsetinfo.txouts].vout = 0;
+
+          // Increment the number of transactions with unspent outputs
+          packet->data.txoutsetinfo.transactions++;
+
+          // Increment the number of unspent transaction outputs
+          packet->data.txoutsetinfo.txouts++;
+
+          // Increase the total number of Bitcoins in the UTXO set
+          packet->data.txoutsetinfo.total_amount += value;
+        }
+      }
+    }
+
+    block_mutex.release();
   }
 
   void build_txout (RPCMessage *packet)
@@ -115,8 +168,6 @@ behavior RPCServer (
         }
         case SUBMIT_BLOCK:
         {
-          // TODO: validate block?
-          // TODO: transmit block to the network?
           // Add the new block to the blockchain
           block_mutex.acquire();
           bc_out.head_block = bc_in.head_block + 1;

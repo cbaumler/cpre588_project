@@ -6,9 +6,10 @@
 *               simplified per the scope of this project.
 ****************************************************************************/
 
-#define BLOCK_VERSION       2
-#define MAX_TRANSACTIONS   10
-#define BLOCKCHAIN_MAX     64
+#define BLOCK_VERSION              2
+#define MAX_TRANSACTIONS          10
+#define MAX_BLOCKCHAIN_LENGTH     64
+#define MAX_UTXO                1024
 
 // These are the types of RPC messages
 typedef enum
@@ -62,7 +63,9 @@ typedef struct
                      // local best blockchain
   int transactions;  // The number of transactions with unspent outputs
   int txouts;        // The number of unspent transaction outputs
-  int total_amount;  // The total number of bitcoins in the UTXO set
+  int total_amount;  // The total number of Bitcoins in the UTXO set
+
+  Outpoint utxo[MAX_UTXO]; // The UTXO set
 
 } TxOutSetInfo;
 
@@ -89,7 +92,7 @@ typedef struct
 
 typedef struct
 {
-  Block entries[BLOCKCHAIN_MAX];
+  Block entries[MAX_BLOCKCHAIN_LENGTH];
   int head_block;
 
 } Blockchain;
