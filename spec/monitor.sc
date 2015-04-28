@@ -20,7 +20,7 @@ behavior Monitor(i_receiver c_transaction_out, i_receiver c_performance)
     fout = fopen("../log/performance.log", "w");
 
     fprintf(fout, "%s\n", "Performance data will go here\n");
-    exit(0);
+    //exit(0);
   }
 
 };

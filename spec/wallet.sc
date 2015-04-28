@@ -7,7 +7,7 @@
 
 import "c_double_handshake";	// import the standard channel
 
-behavior Wallet(i_receiver c_wallet_in, i_sender c_wallet_out)
+behavior Wallet(i_sender c_wallet_request, i_receiver c_wallet_response)
 {
 
   void main(void)

@@ -16,13 +16,13 @@ behavior Design(i_receiver c_transaction_in, i_sender c_transaction_out,
 {
   // Channels
 
-  // Wallet - Core Channels
-  c_double_handshake c_wallet_in;
-  c_double_handshake c_wallet_out;
+  // Wallet - Core RPC Channels
+  c_double_handshake c_wallet_request;
+  c_double_handshake c_wallet_response;
 
-  // Core - Software Miner Channels
-  c_double_handshake c_swminer_in;
-  c_double_handshake c_swminer_out;
+  // Software Miner - Core RPC Channels
+  c_double_handshake c_swminer_request;
+  c_double_handshake c_swminer_response;
 
   // Software Miner - Hardware Miner Channels
   c_double_handshake c_blk_hdr;
@@ -30,10 +30,10 @@ behavior Design(i_receiver c_transaction_in, i_sender c_transaction_out,
 
   // Behaviors
 
-  Wallet wallet(c_wallet_in, c_wallet_out);
-  Core core(c_wallet_in, c_wallet_out, c_swminer_in, c_swminer_out,
-    c_transaction_in, c_transaction_out);
-  MiningSW miningsw(c_blk_hdr, c_nonce);
+  Wallet wallet(c_wallet_request, c_wallet_response);
+  Core core(c_wallet_request, c_wallet_response, c_swminer_request,
+    c_swminer_response, c_transaction_in, c_transaction_out);
+  MiningSW miningsw(c_swminer_request, c_swminer_response, c_blk_hdr, c_nonce);
   MiningHW mininghw(c_blk_hdr, c_nonce, c_profile, c_performance);
 
   void main(void)

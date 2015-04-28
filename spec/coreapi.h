@@ -119,7 +119,7 @@ typedef struct
 typedef union
 {
   BlockTemplate blocktemplate;
-  int block_count;
+  int block_count; // Number of blocks in blockchain. 0 if genesis block only.
   Block block;
   Transaction transaction;
   TxOutSetInfo txoutsetinfo;

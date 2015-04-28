@@ -12,22 +12,28 @@ import "c_double_handshake";	// import the standard double handshake channel
 import "c_mutex";	            // import the standard mutex channel
 import "rpcserver";
 
-behavior CoreInit (out Blockchain blockchain, out TransactionPool pool)
+behavior CoreInit (out Blockchain blockchain, out TransactionPool transaction_pool)
 {
   void main (void)
   {
     blockchain.head_block = 0;
-    pool.n_in_pool = 0;
+    transaction_pool.n_in_pool = 0;
 
-    // TODO: Read these in from the stimulus. Make up genesis block for now.
+    // TODO: Read these in from the stimulus. Make up genesis block for now
     blockchain.entries[0].hash = 0x14a2483c;
     blockchain.entries[0].transactions[0].txid = 0;
     blockchain.entries[0].transactions[1].txid = 1;
+    blockchain.entries[0].n_transactions = 2;
+
+    // TODO: Make up some transactions in the pool for now
+    transaction_pool.pool[0].txid = 2;
+    transaction_pool.pool[1].txid = 3;
+    transaction_pool.n_in_pool = 2;
   }
 };
 
-behavior Core (i_sender c_wallet_in, i_receiver c_wallet_out,
-  i_sender c_swminer_in, i_receiver c_swminer_out,
+behavior Core (i_receiver c_wallet_request, i_sender c_wallet_response,
+  i_receiver c_swminer_request, i_sender c_swminer_response,
   i_receiver c_transaction_in, i_sender c_transaction_out)
 {
 
@@ -52,8 +58,8 @@ behavior Core (i_sender c_wallet_in, i_receiver c_wallet_out,
 
   // Create RPC server for communicating with mining software RPC client
   RPCServer mining_server(
-    c_swminer_out,
-    c_swminer_in,
+    c_swminer_request,
+    c_swminer_response,
     blockchain,
     blockchain,
     transaction_pool,
@@ -64,8 +70,8 @@ behavior Core (i_sender c_wallet_in, i_receiver c_wallet_out,
 
   // Create RPC server for communicating with wallet RPC client
     RPCServer wallet_server(
-    c_wallet_out,
-    c_wallet_in,
+    c_wallet_request,
+    c_wallet_response,
     blockchain,
     blockchain,
     transaction_pool,

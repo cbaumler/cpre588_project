@@ -42,6 +42,7 @@ behavior RPCServer (
     {
       // Copy transaction from pool into packet payload
       memcpy(&(p->transactions[idx]), &(pool_in.pool[idx]), sizeof(Transaction));
+      p->num_transactions++;
     }
     pool_out.n_in_pool = 0;
     pool_mutex.release();
@@ -159,7 +160,7 @@ behavior RPCServer (
         case GET_BLOCK_COUNT:
         {
           // Create a block count payload
-          packet.data.block_count = (bc_in.head_block)+1;
+          packet.data.block_count = (bc_in.head_block);
           break;
         }
         case SUBMIT_BLOCK:
@@ -170,6 +171,7 @@ behavior RPCServer (
           memcpy(&(bc_out.entries[bc_in.head_block]),
             &(packet.data.block), sizeof(Block));
           block_mutex.release();
+          break;
         }
         case GET_TX_OUT_SET_INFO:
         {
@@ -243,10 +245,10 @@ behavior RPCServer (
           fprintf(stderr, "Core received invalid RPC message\n");
           break;
         }
-
-        // Send the packet over the network
-        c_response.send(&packet, sizeof(packet));
       }
+
+      // Send the packet over the network
+      c_response.send(&packet, sizeof(packet));
     }
   }
 

@@ -11,7 +11,22 @@
 
 import "c_double_handshake";	// import the standard double handshake channel
 
-behavior RPCClient (i_sender c_request, i_receiver c_response)
+interface IClient
+{
+  // Mining APIs
+  int getblocktemplate (int id, BlockTemplate *p_template);
+  int  getblockcount (void);
+  int submitblock (Block *p_block);
+
+  // Wallet APIs
+  int gettxoutsetinfo (TxOutSetInfo *p_info);
+  int gettxout (int txid, int vout, TxOut *p_txout);
+  int createrawtransaction (Outpoint input, int address, int amount);
+  int signrawtransaction (int raw_transaction, int private_key);
+  int sendrawtransaction (int signed_transaction);
+};
+
+behavior RPCClient (i_sender c_request, i_receiver c_response) implements IClient
 {
 
   /*****************************************************************************
@@ -27,7 +42,7 @@ behavior RPCClient (i_sender c_request, i_receiver c_response)
   int getblocktemplate (int id, BlockTemplate *p_template)
   {
     RPCMessage packet;
-    int result;
+    int result = -1;
 
     // Create a network packet with header and payload
     packet.type = GET_BLOCK_TEMPLATE;
@@ -43,10 +58,7 @@ behavior RPCClient (i_sender c_request, i_receiver c_response)
       memcpy(p_template, &(packet.data.blocktemplate), sizeof(BlockTemplate));
       result = 1;
     }
-    else
-    {
-      result = -1;
-    }
+    return result;
   }
 
 /*****************************************************************************
@@ -61,7 +73,7 @@ behavior RPCClient (i_sender c_request, i_receiver c_response)
   int  getblockcount (void)
   {
     RPCMessage packet;
-    int result;
+    int result = -1;
 
     // Create a network packet with header
     packet.type = GET_BLOCK_COUNT;
@@ -73,11 +85,7 @@ behavior RPCClient (i_sender c_request, i_receiver c_response)
     // Return the packet data
     if (packet.type == GET_BLOCK_COUNT)
     {
-      result = packet.block_count;
-    }
-    else
-    {
-      result = -1;
+      result = packet.data.block_count;
     }
     return result;
   }
@@ -89,11 +97,14 @@ behavior RPCClient (i_sender c_request, i_receiver c_response)
  * Arguments:
  * p_block - a pointer to the block to be submitted
  *
- * Returns: Void
+ * Returns:
+ *  1 success
+ * -1 failure
  ****************************************************************************/
-  void submitblock (Block *p_block)
+  int submitblock (Block *p_block)
   {
     RPCMessage packet;
+    int result = -1;
 
     // Create a network packet with header and payload
     packet.type = SUBMIT_BLOCK;
@@ -103,11 +114,12 @@ behavior RPCClient (i_sender c_request, i_receiver c_response)
     c_request.send(&packet, sizeof(packet));
     c_response.receive(&packet, sizeof(packet));
 
-    if (packet.type != SUBMIT_BLOCK)
+    if (packet.type == SUBMIT_BLOCK)
     {
-      fprintf(stderr, "RPC Client: Incorrect server response, submitblock\n");
-      exit (1);
+
+      result = 1;
     }
+    return result;
   }
 
   /*****************************************************************************
@@ -117,12 +129,14 @@ behavior RPCClient (i_sender c_request, i_receiver c_response)
    * Arguments:
    * p_info - a pointer to the UTXO set info record
    *
-   * Returns: Void
-   *
+   * Returns:
+   *  1 success
+   * -1 failure
    ****************************************************************************/
-  void gettxoutsetinfo (TxOutSetInfo *p_info)
+  int gettxoutsetinfo (TxOutSetInfo *p_info)
   {
     RPCMessage packet;
+    int result = -1;
 
     // Create a network packet with header
     packet.type = GET_TX_OUT_SET_INFO;
@@ -134,12 +148,9 @@ behavior RPCClient (i_sender c_request, i_receiver c_response)
     if (packet.type == GET_TX_OUT_SET_INFO)
     {
       memcpy(p_info, &(packet.data.txoutsetinfo), sizeof(TxOutSetInfo));
+      result = 1;
     }
-    else
-    {
-      fprintf(stderr, "RPC Client: Incorrect server response, txoutsetinfo\n");
-      exit (1);
-    }
+    return result;
   }
 
   /*****************************************************************************
@@ -150,12 +161,14 @@ behavior RPCClient (i_sender c_request, i_receiver c_response)
    * vout - the index of the output within the transaction
    * p_txout - a pointer to the transaction output detail record
    *
-   * Returns: Void
-   *
+   * Returns:
+   *  1 success
+   * -1 failure
    ****************************************************************************/
-  void gettxout (int txid, int vout, TxOut *p_txout)
+  int gettxout (int txid, int vout, TxOut *p_txout)
   {
     RPCMessage packet;
+    int result = -1;
 
     // Create a network packet with header and payload
     packet.type = GET_TX_OUT;
@@ -169,13 +182,9 @@ behavior RPCClient (i_sender c_request, i_receiver c_response)
     if (packet.type == GET_TX_OUT)
     {
       memcpy(p_txout, &(packet.data.txout), sizeof(TxOut));
+      result = 1;
     }
-    else
-    {
-      fprintf(stderr, "RPC Client: Incorrect server response, gettxout\n");
-      exit (1);
-    }
-
+    return result;
   }
 
 
@@ -212,7 +221,7 @@ behavior RPCClient (i_sender c_request, i_receiver c_response)
 
     if (packet.type == CREATE_RAW_TRANSACTION)
     {
-      result = packet.transaction.raw_transaction;
+      result = packet.data.transaction.raw_transaction;
     }
     else
     {
@@ -248,7 +257,7 @@ behavior RPCClient (i_sender c_request, i_receiver c_response)
 
     if (packet.type == SIGN_RAW_TRANSACTION)
     {
-      result = packet.transaction.signed_transaction;
+      result = packet.data.transaction.signed_transaction;
     }
     else
     {
@@ -282,7 +291,7 @@ behavior RPCClient (i_sender c_request, i_receiver c_response)
 
     if (packet.type == SEND_RAW_TRANSACTION)
     {
-      result = packet.transaction.txid;
+      result = packet.data.transaction.txid;
     }
     else
     {
