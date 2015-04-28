@@ -21,7 +21,6 @@ behavior RPCServer (
   in TransactionPool pool_in,
   out TransactionPool pool_out,
   in int target_threshold,
-  in event start_servers,
   i_semaphore block_mutex,
   i_semaphore pool_mutex)
 {
@@ -142,9 +141,6 @@ behavior RPCServer (
     // A local transaction copy used for signing a transaction and adding it
     // to the pool. This is a design simplification to reduce scope.
     Transaction local_transaction_copy;
-
-    // Wait for the blockchain to initialize
-    wait(start_servers);
 
     while (1)
     {

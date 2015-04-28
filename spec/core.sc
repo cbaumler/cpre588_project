@@ -12,6 +12,20 @@ import "c_double_handshake";	// import the standard double handshake channel
 import "c_mutex";	            // import the standard mutex channel
 import "rpcserver";
 
+behavior CoreInit (out Blockchain blockchain, out TransactionPool pool)
+{
+  void main (void)
+  {
+    blockchain.head_block = 0;
+    pool.n_in_pool = 0;
+
+    // TODO: Read these in from the stimulus. Make up genesis block for now.
+    blockchain.entries[0].hash = 0x14a2483c;
+    blockchain.entries[0].transactions[0].txid = 0;
+    blockchain.entries[0].transactions[1].txid = 1;
+  }
+};
+
 behavior Core (i_sender c_wallet_in, i_receiver c_wallet_out,
   i_sender c_swminer_in, i_receiver c_swminer_out,
   i_receiver c_transaction_in, i_sender c_transaction_out)
@@ -33,8 +47,8 @@ behavior Core (i_sender c_wallet_in, i_receiver c_wallet_out,
   // Channel for modifying the transaction pool
   c_mutex pool_mutex;
 
-  // An event to notify the RPC servers when to start
-  event start_servers;
+  // Behavior used to initialize the Bitcoin Core
+  CoreInit init(blockchain, transaction_pool);
 
   // Create RPC server for communicating with mining software RPC client
   RPCServer mining_server(
@@ -45,7 +59,6 @@ behavior Core (i_sender c_wallet_in, i_receiver c_wallet_out,
     transaction_pool,
     transaction_pool,
     target_threshold,
-    start_servers,
     block_mutex,
     pool_mutex);
 
@@ -58,23 +71,16 @@ behavior Core (i_sender c_wallet_in, i_receiver c_wallet_out,
     transaction_pool,
     transaction_pool,
     target_threshold,
-    start_servers,
     block_mutex,
     pool_mutex);
 
-  // Create a manager for the blockchain
-  //BlockchainManager blockchain_manager(&blockchain, &transaction_pool,
-  //  block_mutex, pool_mutex, start_servers);
-
   void main (void)
   {
-    blockchain.head_block = 0;
-    transaction_pool.n_in_pool = 0;
+    init.main();
 
     par {
       mining_server.main();
       wallet_server.main();
-      //blockchain_manager.main();
     }
   }
 
