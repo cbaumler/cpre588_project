@@ -68,7 +68,7 @@ behavior Core (i_sender c_wallet_in, i_receiver c_wallet_out,
 
   void main (void)
   {
-    blockchain.head_block = 5;
+    blockchain.head_block = 0;
     transaction_pool.n_in_pool = 0;
 
     par {
