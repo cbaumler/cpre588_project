@@ -44,5 +44,8 @@ behavior Stimulus(i_sender c_transaction_in, i_sender c_profile)
       fprintf(stderr, "Failed to read hardware.cfg\n");
       exit(1);
     }
+
+    waitfor(100); // TODO make simulation time configurable
+    exit (0);
   }
 };

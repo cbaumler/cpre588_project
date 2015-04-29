@@ -1,2 +1,68 @@
-Performance data will go here
 
+Code Performance Breakdown:
+
+Code Block   1: Time=         0  Power=         0
+Code Block   2: Time=         1  Power=         1
+Code Block   3: Time=         2  Power=         2
+Code Block   4: Time=         3  Power=         3
+Code Block   5: Time=         4  Power=         4
+Code Block   6: Time=         5  Power=         5
+Code Block   7: Time=         6  Power=         6
+Code Block   8: Time=         7  Power=         7
+Code Block   9: Time=         8  Power=         8
+Code Block  10: Time=         9  Power=         9
+Code Block  11: Time=        10  Power=        10
+Code Block  12: Time=        11  Power=        11
+Code Block  13: Time=        12  Power=        12
+Code Block  14: Time=        13  Power=        13
+Code Block  15: Time=        14  Power=        14
+Code Block  16: Time=        15  Power=        15
+Code Block  17: Time=        16  Power=        16
+Code Block  18: Time=        17  Power=        17
+Code Block  19: Time=        18  Power=        18
+Code Block  20: Time=        19  Power=        19
+Code Block  21: Time=        20  Power=        20
+Code Block  22: Time=        21  Power=        21
+Code Block  23: Time=        22  Power=        22
+Code Block  24: Time=        23  Power=        23
+Code Block  25: Time=        24  Power=        24
+Code Block  26: Time=        25  Power=        25
+
+Block Performance Breakdown:
+
+Total Blocks Mined: 26
+
+Mined Block:  1: Time=         0  Power=         0
+Mined Block:  2: Time=         1  Power=         1
+Mined Block:  3: Time=         2  Power=         2
+Mined Block:  4: Time=         3  Power=         3
+Mined Block:  5: Time=         4  Power=         4
+Mined Block:  6: Time=         5  Power=         5
+Mined Block:  7: Time=         6  Power=         6
+Mined Block:  8: Time=         7  Power=         7
+Mined Block:  9: Time=         8  Power=         8
+Mined Block: 10: Time=         9  Power=         9
+Mined Block: 11: Time=        10  Power=        10
+Mined Block: 12: Time=        11  Power=        11
+Mined Block: 13: Time=        12  Power=        12
+Mined Block: 14: Time=        13  Power=        13
+Mined Block: 15: Time=        14  Power=        14
+Mined Block: 16: Time=        15  Power=        15
+Mined Block: 17: Time=        16  Power=        16
+Mined Block: 18: Time=        17  Power=        17
+Mined Block: 19: Time=        18  Power=        18
+Mined Block: 20: Time=        19  Power=        19
+Mined Block: 21: Time=        20  Power=        20
+Mined Block: 22: Time=        21  Power=        21
+Mined Block: 23: Time=        22  Power=        22
+Mined Block: 24: Time=        23  Power=        23
+Mined Block: 25: Time=        24  Power=        24
+Mined Block: 26: Time=        25  Power=        25
+
+Overall Performance:
+
+Total Power Usage :        360 Watts
+Total Cost        :        299 Dollars
+Hash Rate         :  180000000 Hashes/Second
+Energy Efficiency :     500000 Hashes/Joule
+Cost Efficiency   :     602006 Hashes/Second/Dollar
