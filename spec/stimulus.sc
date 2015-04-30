@@ -45,6 +45,7 @@ behavior Stimulus(i_sender c_transaction_in, i_sender c_profile)
       exit(1);
     }
 
+    // Terminate the simulation after the desired amount of time
     waitfor(100); // TODO make simulation time configurable
     exit (0);
   }

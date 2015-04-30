@@ -81,9 +81,22 @@ typedef struct
 
 } TxOut;
 
+// Representative Bitcoin block header type
+typedef struct
+{
+  int version;                                 // Bitcoin protocol version
+  int previous_block_hash;                     // Hash of previous block header
+  int current_time;                            // Timestamp
+  int merkle_root_hash;                        // Constructed from txids
+  int bits;                                    // Difficulty threshold
+  int nonce;                                   // Random number
+
+} BlockHeader;
+
 // Representative Bitcoin block type
 typedef struct
 {
+  BlockHeader header;                           // The block header
   int hash;                                     // Hash of block header
   Transaction transactions[MAX_TRANSACTIONS];   // Transactions in block
   int n_transactions;                           // Number of transactions
