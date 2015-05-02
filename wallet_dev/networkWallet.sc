@@ -96,7 +96,7 @@ printf(stderr, "account balance is: \n", showBalance);
 
 // Call gettxoutsetinfo() API to get list of unspent transactions - example code below
 
-Value gettxoutsetinfo(const Array& params, bool fHelp)
+gettxoutsetinfo(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
         throw runtime_error(
