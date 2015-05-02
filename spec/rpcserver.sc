@@ -231,6 +231,7 @@ behavior RPCServer (
           if (packet.data.transaction.signed_transaction == local_transaction_copy.signed_transaction)
           {
             // Add the transaction to the transaction pool
+            block_mutex.acquire();
             pool_mutex.acquire();
             if ((pool_in.n_in_pool) < MAX_TRANSACTIONS)
             {
@@ -239,12 +240,28 @@ behavior RPCServer (
               pool_out.n_in_pool = pool_in.n_in_pool + 1;
             }
             pool_mutex.release();
+            block_mutex.release();
           }
           else
           {
             fprintf(stderr, "Couldn't send signed transaction\n");
             exit (1);
           }
+          break;
+        }
+        case DEV_SEND_TRANSACTION:
+        {
+          // Transaction came from the P2P network. Add it to the pool.
+          block_mutex.acquire();
+          pool_mutex.acquire();
+          if ((pool_in.n_in_pool) < MAX_TRANSACTIONS)
+          {
+            memcpy(&(pool_out.pool[pool_in.n_in_pool]),
+              &(packet.data.transaction), sizeof(Transaction));
+            pool_out.n_in_pool = pool_in.n_in_pool + 1;
+          }
+          pool_mutex.release();
+          block_mutex.release();
           break;
         }
         default:

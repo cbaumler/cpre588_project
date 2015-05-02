@@ -7,30 +7,69 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <time.h>
+# include "coreapi.h"
 #include "../config/hwconfig.h"  // Defines hardware config parameters
 
-import "c_double_handshake";	// import the standard channel
+#define FGETS_MAX   100
 
-behavior Stimulus(i_sender c_transaction_in, i_sender c_profile)
+import "c_double_handshake";	// import the standard channel
+import "rpcclient";
+
+typedef enum
 {
+  CREATE_BLOCK,
+  CREATE_TRANSACTION
+
+} EventType;
+
+typedef struct
+{
+  int timestamp;
+  EventType type;
+  Block block;
+  Transaction transaction;
+
+} Event;
+
+behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
+  i_sender c_profile)
+{
+  RPCClient client(c_p2p_request, c_p2p_response);
+
   void main (void)
   {
-    FILE *fin;
+    FILE *fhwconfig;
+    FILE *ftransactions;
+    FILE *fevents;
     char name[MAX_NAME_LENGTH];
-    int value, idx;
+    int value, idx, err;
     HWConfig hwconfig;
     int *p_hwconfig;
+    Event events[50];
+    Transaction transactions[MAX_TRANSACTIONS];
+    int event_write_index = 0;
+    int tx_write_index = 0;
+    int tx_read_index = 0;
+    int txid, utxoid, addr, amt, timestamp, num_tx;
+    int mining_difficulty, simulation_time;
+    char line[FGETS_MAX];
+    char temp[FGETS_MAX];
+    char event_str[64];
 
     p_hwconfig = (int*)(&(hwconfig.clock));
 
-    fin = fopen("../config/hardware.cfg", "r");
+    fhwconfig = fopen("../config/hardware.cfg", "r");
+    ftransactions = fopen("../config/transactions.cfg", "r");
+    fevents = fopen("../config/events.cfg", "r");
 
-    if (fin != NULL)
+    if (fhwconfig != NULL)
     {
       printf("Hardware Configuration:\n");
       for (idx = 0; idx < NUM_HW_PARAMETERS; idx++)
       {
-        if (fscanf(fin, "%s %d", &name, &value) == EOF)
+        if (fscanf(fhwconfig, "%s %d", &name, &value) == EOF)
         {
           fprintf(stderr, "Too few parameters in hardware.cfg\n");
           exit(1);
@@ -45,8 +84,150 @@ behavior Stimulus(i_sender c_transaction_in, i_sender c_profile)
       exit(1);
     }
 
+    if (ftransactions != NULL)
+    {
+      // Read the configuration file header
+      fgets(line, FGETS_MAX, ftransactions);
+
+      // Read the transactions
+      while (fscanf(ftransactions, "%d %d %d %d", &txid, &utxoid, &addr, &amt) != EOF)
+      {
+        // Add the transactions to an array
+        transactions[tx_write_index].txid = txid;
+        transactions[tx_write_index].input.txid = utxoid;
+        transactions[tx_write_index].input.vout = 0;
+        transactions[tx_write_index].output.txid = txid;
+        transactions[tx_write_index].output.vout = 0;
+        transactions[tx_write_index].address = addr;
+        transactions[tx_write_index].amount = amt;
+
+        // Use random numbers for these, because they won't matter for the
+        // sake of our simulation
+        transactions[tx_write_index].private_key = rand();
+        transactions[tx_write_index].raw_transaction = rand();
+        transactions[tx_write_index].signed_transaction = rand();
+
+        // Increment the array write index
+        tx_write_index++;
+      }
+    }
+    else
+    {
+      fprintf(stderr, "Failed to read transactions.cfg\n");
+      exit(1);
+    }
+
+    if (fevents != NULL)
+    {
+      // Read the simulation time
+      fgets(line, FGETS_MAX, fevents);
+      sscanf(line, "%s %d", temp, &simulation_time);
+
+      // Read the mining difficulty
+      fgets(line, FGETS_MAX, fevents);
+      sscanf(line, "%s %d", temp, &mining_difficulty);
+
+      // Read the blank line
+      fgets(line, FGETS_MAX, fevents);
+
+      // Read the configuration file header
+      fgets(line, FGETS_MAX, fevents);
+
+      // Read the events
+      while (fscanf(fevents, "%d %s %d", &timestamp, event_str, &num_tx) != EOF)
+      {
+        if (strcmp(event_str, "CREATE_BLOCK") == 0)
+        {
+          // Create a block event for submitting a block to our node.
+          // This simulates getting a block from the Peer-to-Peer network.
+          events[event_write_index].type = CREATE_BLOCK;
+          events[event_write_index].timestamp = timestamp;
+          events[event_write_index].block.header.version = BLOCK_VERSION;
+          events[event_write_index].block.header.current_time = (int)time(0);
+          events[event_write_index].block.header.bits = mining_difficulty;
+
+          // To avoid the complexity of having to determine these, use
+          // a random number. This shouldn't matter for our simulations.
+          events[event_write_index].block.header.previous_block_hash = rand();
+          events[event_write_index].block.header.merkle_root_hash = rand();
+          events[event_write_index].block.hash = rand();
+
+          // Add transactions to the block
+          events[event_write_index].block.n_transactions = num_tx;
+          for (idx = 0; idx < num_tx; idx++)
+          {
+            if (tx_read_index < tx_write_index)
+            {
+              memcpy(&(events[event_write_index].block.transactions[idx]),
+                     &(transactions[tx_read_index]), sizeof(Transaction));
+              tx_read_index++;
+            }
+            else
+            {
+              fprintf(stderr, "Not enough transactions in transactions.cfg\n");
+              exit(1);
+            }
+          }
+
+          // Increment the array write index
+          event_write_index++;
+        }
+        else if (strcmp(event_str, "CREATE_TRANSACTION") == 0)
+        {
+          for (idx = 0; idx < num_tx; idx++)
+          {
+            // Create a transaction event to send a transaction to our node
+            events[event_write_index].type = CREATE_TRANSACTION;
+            events[event_write_index].timestamp = timestamp;
+            memcpy(&(events[event_write_index].transaction),
+              &(transactions[tx_read_index]), sizeof(Transaction));
+            tx_read_index++;
+            event_write_index++;
+          }
+        }
+        else
+        {
+          fprintf(stderr, "Invalid action in events.cfg: %s\n", event_str);
+          exit(1);
+        }
+      }
+    }
+    else
+    {
+      fprintf(stderr, "Failed to read events.cfg\n");
+      exit(1);
+    }
+
+    // Inject the events from the event configuration file
+    for (idx = 0; idx < event_write_index; idx++)
+    {
+      // Wait until the correct time to inject the event
+      waitfor(events[idx].timestamp);
+
+      if (events[idx].type == CREATE_BLOCK)
+      {
+        printf("Injecting block from P2P Network\n");
+        err = client.submitblock(&(events[idx].block));
+        if (err == -1)
+        {
+          fprintf(stderr, "stimulus: submitblock failed\n");
+          exit (1);
+        }
+      }
+      else if (events[idx].type == CREATE_TRANSACTION)
+      {
+        printf("Injecting transaction from P2P Network\n");
+        err = client.dev_sendrawtransaction(events[idx].transaction);
+        if (err == -1)
+        {
+          fprintf(stderr, "stimulus: dev_sendrawtransaction failed\n");
+          exit (1);
+        }
+      }
+    }
+
     // Terminate the simulation after the desired amount of time
-    waitfor(100); // TODO make simulation time configurable
+    waitfor(simulation_time);
     exit (0);
   }
 };

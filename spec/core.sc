@@ -19,22 +19,22 @@ behavior CoreInit (out Blockchain blockchain, out TransactionPool transaction_po
     blockchain.head_block = 0;
     transaction_pool.n_in_pool = 0;
 
-    // TODO: Read these in from the stimulus. Make up genesis block for now
+    // Create a genesis block to initialize the blockchain
     blockchain.entries[0].hash = 0x14a2483c;
-    blockchain.entries[0].transactions[0].txid = 0;
-    blockchain.entries[0].transactions[1].txid = 1;
-    blockchain.entries[0].n_transactions = 2;
+    //blockchain.entries[0].transactions[0].txid = 0;
+    //blockchain.entries[0].transactions[1].txid = 1;
+    blockchain.entries[0].n_transactions = 0;
 
     // TODO: Make up some transactions in the pool for now
-    transaction_pool.pool[0].txid = 2;
-    transaction_pool.pool[1].txid = 3;
-    transaction_pool.n_in_pool = 2;
+    //transaction_pool.pool[0].txid = 2;
+    //transaction_pool.pool[1].txid = 3;
+    //transaction_pool.n_in_pool = 2;
   }
 };
 
 behavior Core (i_receiver c_wallet_request, i_sender c_wallet_response,
   i_receiver c_swminer_request, i_sender c_swminer_response,
-  i_receiver c_transaction_in, i_sender c_transaction_out)
+  i_receiver c_p2p_request, i_sender c_p2p_response)
 {
 
   // This data structure represents a local copy of the blockchain
@@ -80,6 +80,18 @@ behavior Core (i_receiver c_wallet_request, i_sender c_wallet_response,
     block_mutex,
     pool_mutex);
 
+  // Create RPC server for communicating with Bitcoin Peer-to-Peer network
+    RPCServer p2p_server(
+    c_p2p_request,
+    c_p2p_response,
+    blockchain,
+    blockchain,
+    transaction_pool,
+    transaction_pool,
+    target_threshold,
+    block_mutex,
+    pool_mutex);
+
   void main (void)
   {
     init.main();
@@ -87,6 +99,7 @@ behavior Core (i_receiver c_wallet_request, i_sender c_wallet_response,
     par {
       mining_server.main();
       wallet_server.main();
+      p2p_server.main();
     }
   }
 

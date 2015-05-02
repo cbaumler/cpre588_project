@@ -24,6 +24,9 @@ interface IClient
   int createrawtransaction (Outpoint input, int address, int amount);
   int signrawtransaction (int raw_transaction, int private_key);
   int sendrawtransaction (int signed_transaction);
+
+  // Development APIs to support the testbench
+  int dev_sendrawtransaction (Transaction transaction);
 };
 
 behavior RPCClient (i_sender c_request, i_receiver c_response) implements IClient
@@ -290,6 +293,42 @@ behavior RPCClient (i_sender c_request, i_receiver c_response) implements IClien
     c_response.receive(&packet, sizeof(packet));
 
     if (packet.type == SEND_RAW_TRANSACTION)
+    {
+      result = packet.data.transaction.txid;
+    }
+    else
+    {
+      result = -1;
+    }
+    return result;
+  }
+
+  /*****************************************************************************
+   * RPC call to send a signed raw transaction to the peer-to-peer network
+   * This is a development API to be used by the stimulus to inject transactions
+   * from the peer-to-peer network.
+   *
+   * Arguments:
+   * transaction - the transaction to inject
+   *
+   * Returns:
+   * The transaction ID on success
+   * -1 on failure
+   ****************************************************************************/
+  int dev_sendrawtransaction (Transaction transaction)
+  {
+    RPCMessage packet;
+    int result;
+
+    // Create a network packet with header and payload
+    packet.type = DEV_SEND_TRANSACTION;
+    memcpy(&(packet.data.transaction), &(transaction), sizeof(Transaction));
+
+    // Transmit the packet and wait for the response
+    c_request.send(&packet, sizeof(packet));
+    c_response.receive(&packet, sizeof(packet));
+
+    if (packet.type == DEV_SEND_TRANSACTION)
     {
       result = packet.data.transaction.txid;
     }

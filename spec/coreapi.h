@@ -6,10 +6,10 @@
 *               simplified per the scope of this project.
 ****************************************************************************/
 
-#define BLOCK_VERSION              2
-#define MAX_TRANSACTIONS          10
-#define MAX_BLOCKCHAIN_LENGTH     64
-#define MAX_UTXO                1024
+#define BLOCK_VERSION                    2
+#define MAX_TRANSACTIONS                10
+#define MAX_BLOCKCHAIN_LENGTH           64
+#define MAX_UTXO                      1024
 
 // These are the types of RPC messages
 typedef enum
@@ -24,7 +24,10 @@ typedef enum
   GET_TX_OUT_SET_INFO,
   CREATE_RAW_TRANSACTION,
   SIGN_RAW_TRANSACTION,
-  SEND_RAW_TRANSACTION
+  SEND_RAW_TRANSACTION,
+
+  // Development API
+  DEV_SEND_TRANSACTION
 
 } RPCType;
 
