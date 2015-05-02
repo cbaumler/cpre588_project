@@ -152,7 +152,7 @@ Value gettxoutsetinfo(const Array& params, bool fHelp)
 
 // Keep track of transaction and the number of Bitcoins the user recieved
 
-// networkWallet may need to use gettxout() to get information about transaction outputs
+
 
 
 
