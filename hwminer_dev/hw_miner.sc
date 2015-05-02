@@ -12,7 +12,8 @@ event e_reset;
 event e_ready;
 event e_abort;
 event e_tout;
-event e_tset;
+event e_tstart;
+event e_tstop;
 
 behavior HW_Miner(i_receiver   c_abort,
                   i_receiver   c_blk_hdr, 
@@ -28,7 +29,8 @@ behavior HW_Miner(i_receiver   c_abort,
 	                e_ready,
 	                e_reset,
 	                e_tout,
-	                e_tset);  	                      
+	                e_tstart,
+	                e_tstop);  	                      
 	  
   HW_Config hw_config(c_profile,
                       c_reset,
@@ -39,7 +41,8 @@ behavior HW_Miner(i_receiver   c_abort,
                     e_abort);  
       
   HW_Timer hw_timer(e_tout,
-                    e_tset); 
+                    e_tstart,
+                    e_tstop); 
                     
                                               
   void main(void) {	                      

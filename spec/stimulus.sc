@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-# include "coreapi.h"
+# include "../api/coreapi.h"
 #include "../config/hwconfig.h"  // Defines hardware config parameters
 
 #define FGETS_MAX   100

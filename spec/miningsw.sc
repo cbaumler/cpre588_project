@@ -7,7 +7,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "coreapi.h"
+#include "../api/coreapi.h"
 
 #define MINER_ID   0
 

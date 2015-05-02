@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
-#include "coreapi.h"
+#include "../api/coreapi.h"
 
 import "c_double_handshake";	// import the standard double handshake channel
 import "c_mutex";	            // import the standard mutex channel
