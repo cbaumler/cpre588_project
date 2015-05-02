@@ -10,6 +10,7 @@
 #define MAX_TRANSACTIONS                10
 #define MAX_BLOCKCHAIN_LENGTH           64
 #define MAX_UTXO                      1024
+#define NUM_HASH_BYTES                  32
 
 // These are the types of RPC messages
 typedef enum
@@ -59,11 +60,13 @@ typedef struct
 // transaction output (UTXO) set
 typedef struct
 {
-  int height;        // The height of the local best block chain
-                     // A new node with only the hardcoded genesis block will
-                     // have a height of 0
-  int best_block;    // The hash of the header of the highest block on the
-                     // local best blockchain
+  // The height of the local best block chain A new node with only the
+  // hardcoded genesis block will have a height of 0
+  int height;
+
+  // The hash of the header of the highest block on the local best blockchain
+  unsigned char best_block[NUM_HASH_BYTES];
+
   int transactions;  // The number of transactions with unspent outputs
   int txouts;        // The number of unspent transaction outputs
   int total_amount;  // The total number of Bitcoins in the UTXO set
@@ -75,8 +78,10 @@ typedef struct
 // A data structure containing details about a transaction output
 typedef struct
 {
-  int best_block;    // The hash of the header of the block on the local best
-                     // blockchain which includes this transaction
+  // The hash of the header of the block on the local best
+  // blockchain which includes this transaction
+  unsigned char best_block[NUM_HASH_BYTES];
+
   int value;         // The amount spent to this output. May be 0.
   int address;       // The address to which Bitcoins were sent
   int txid;          // The transaction ID containing the output
@@ -87,12 +92,12 @@ typedef struct
 // Representative Bitcoin block header type
 typedef struct
 {
-  int version;                                 // Bitcoin protocol version
-  int previous_block_hash;                     // Hash of previous block header
-  int current_time;                            // Timestamp
-  int merkle_root_hash;                        // Constructed from txids
-  int bits;                                    // Difficulty threshold
-  int nonce;                                   // Random number
+  unsigned int  version;                       // Bitcoin protocol version
+  unsigned char prev_hash[NUM_HASH_BYTES];     // Hash of previous block header
+  unsigned int  current_time;                  // Timestamp
+  unsigned char merkle_root[NUM_HASH_BYTES];   // Constructed from txids
+  unsigned int  nbits;                         // Difficulty threshold
+  unsigned int  nonce;                         // Random number
 
 } BlockHeader;
 
@@ -100,7 +105,7 @@ typedef struct
 typedef struct
 {
   BlockHeader header;                           // The block header
-  int hash;                                     // Hash of block header
+  unsigned char hash[NUM_HASH_BYTES];           // Hash of block header
   Transaction transactions[MAX_TRANSACTIONS];   // Transactions in block
   int n_transactions;                           // Number of transactions
 
@@ -123,12 +128,12 @@ typedef struct
 // A block template for use with mining software
 typedef struct
 {
-  int version;                                 // Bitcoin protocol version
-  int previous_block_hash;                     // Hash of previous block header
-  int num_transactions;                        // Number of transactions available
+  unsigned int version;                        // Bitcoin protocol version
+  unsigned char prev_hash[NUM_HASH_BYTES];     // Hash of previous block header
+  unsigned int num_transactions;               // Number of transactions available
   Transaction transactions[MAX_TRANSACTIONS];  // Array of transactions
-  int current_time;                            // Timestamp
-  int bits;                                    // Difficulty threshold
+  unsigned int current_time;                   // Timestamp
+  unsigned int bits;                           // Difficulty threshold
 
 } BlockTemplate;
 

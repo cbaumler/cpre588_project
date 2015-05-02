@@ -6,6 +6,7 @@
 ****************************************************************************/
 
 #include <stdio.h>
+#include <time.h>
 #include "../api/coreapi.h"
 
 import "c_double_handshake";	// import the standard double handshake channel
@@ -16,11 +17,16 @@ behavior CoreInit (out Blockchain blockchain, out TransactionPool transaction_po
 {
   void main (void)
   {
+    int idx;
+
     blockchain.head_block = 0;
     transaction_pool.n_in_pool = 0;
 
     // Create a genesis block to initialize the blockchain
-    blockchain.entries[0].hash = 0x14a2483c;
+    for (idx = 0; idx < NUM_HASH_BYTES; idx++)
+    {
+      blockchain.entries[0].hash[idx] = (unsigned char)(rand()%255);
+    }
     //blockchain.entries[0].transactions[0].txid = 0;
     //blockchain.entries[0].transactions[1].txid = 1;
     blockchain.entries[0].n_transactions = 0;

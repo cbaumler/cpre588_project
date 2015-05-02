@@ -34,7 +34,7 @@ behavior RPCServer (
     p->version = BLOCK_VERSION;
 
     block_mutex.acquire();
-    p->previous_block_hash = bc_in.entries[bc_in.head_block].hash;
+    memcpy(p->prev_hash, bc_in.entries[bc_in.head_block].hash, NUM_HASH_BYTES);
     block_mutex.release();
 
     pool_mutex.acquire();
@@ -61,7 +61,8 @@ behavior RPCServer (
     block_mutex.acquire();
 
     packet->data.txoutsetinfo.height = bc_in.head_block;
-    packet->data.txoutsetinfo.best_block = bc_in.entries[bc_in.head_block].hash;
+    memcpy(packet->data.txoutsetinfo.best_block,
+      bc_in.entries[bc_in.head_block].hash, NUM_HASH_BYTES);
 
     // Loop through each block in the blockchain
     for (idx1 = 0; idx1 <= bc_in.head_block; idx1++)
@@ -124,7 +125,7 @@ behavior RPCServer (
         if (bc_in.entries[idx1].transactions[idx2].txid == packet->data.txout.txid)
         {
           // Copy the transaction output data
-          packet->data.txout.best_block = bc_in.entries[idx1].hash;
+          memcpy(packet->data.txout.best_block, bc_in.entries[idx1].hash, NUM_HASH_BYTES);
           packet->data.txout.value = bc_in.entries[idx1].transactions[idx2].amount;
           packet->data.txout.address = bc_in.entries[idx1].transactions[idx2].address;
           found_txout = true;

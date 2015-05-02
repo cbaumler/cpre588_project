@@ -9,8 +9,8 @@ SCCOPT  = -vv -ww -g
 all: tb
 
 tb: tb.sc design.sc stimulus.sc monitor.sc wallet.sc core.sc \
-	miningsw.sc mininghw.sc rpcclient.sc rpcserver.sc networkwallet.sc \
-	hardwarewallet.sc
+	miningsw.sc hw_miner.sc rpcclient.sc rpcserver.sc networkwallet.sc \
+	hardwarewallet.sc hw_hash.sc hw_abort.sc hw_timer.sc hw_config.sc
 	$(SCC) tb $(SCCOPT)
 
 clean:

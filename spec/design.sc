@@ -8,7 +8,7 @@
 import "wallet";
 import "core";
 import "miningsw";
-import "mininghw";
+import "hw_miner";
 import "c_double_handshake";	// import the standard channel
 
 behavior Design(i_receiver c_p2p_request, i_sender c_p2p_response,
@@ -25,8 +25,10 @@ behavior Design(i_receiver c_p2p_request, i_sender c_p2p_response,
   c_double_handshake c_swminer_response;
 
   // Software Miner - Hardware Miner Channels
+  c_double_handshake c_abort;
   c_double_handshake c_blk_hdr;
   c_double_handshake c_nonce;
+  c_double_handshake c_reset;
 
   // Behaviors
 
@@ -34,7 +36,7 @@ behavior Design(i_receiver c_p2p_request, i_sender c_p2p_response,
   Core core(c_wallet_request, c_wallet_response, c_swminer_request,
     c_swminer_response, c_p2p_request, c_p2p_response);
   MiningSW miningsw(c_swminer_request, c_swminer_response, c_blk_hdr, c_nonce);
-  MiningHW mininghw(c_blk_hdr, c_nonce, c_profile, c_performance);
+  HW_Miner mininghw(c_abort, c_blk_hdr, c_nonce, c_performance, c_profile, c_reset);
 
   void main(void)
   {

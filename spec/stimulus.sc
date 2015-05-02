@@ -53,7 +53,8 @@ behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
     int tx_write_index = 0;
     int tx_read_index = 0;
     int txid, utxoid, addr, amt, timestamp, num_tx;
-    int mining_difficulty, simulation_time;
+    unsigned int mining_difficulty;
+    int simulation_time;
     char line[FGETS_MAX];
     char temp[FGETS_MAX];
     char event_str[64];
@@ -122,10 +123,12 @@ behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
       // Read the simulation time
       fgets(line, FGETS_MAX, fevents);
       sscanf(line, "%s %d", temp, &simulation_time);
+      printf("Simulation Time: %d\n", simulation_time);
 
       // Read the mining difficulty
       fgets(line, FGETS_MAX, fevents);
       sscanf(line, "%s %d", temp, &mining_difficulty);
+      printf("Mining difficulty: %d\n", mining_difficulty);
 
       // Read the blank line
       fgets(line, FGETS_MAX, fevents);
@@ -144,13 +147,16 @@ behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
           events[event_write_index].timestamp = timestamp;
           events[event_write_index].block.header.version = BLOCK_VERSION;
           events[event_write_index].block.header.current_time = (int)time(0);
-          events[event_write_index].block.header.bits = mining_difficulty;
+          events[event_write_index].block.header.nbits = mining_difficulty;
 
           // To avoid the complexity of having to determine these, use
           // a random number. This shouldn't matter for our simulations.
-          events[event_write_index].block.header.previous_block_hash = rand();
-          events[event_write_index].block.header.merkle_root_hash = rand();
-          events[event_write_index].block.hash = rand();
+          for (idx = 0; idx < NUM_HASH_BYTES; idx++)
+          {
+            events[event_write_index].block.header.prev_hash[idx] = (unsigned char)(rand()%255);
+            events[event_write_index].block.header.merkle_root[idx] = (unsigned char)(rand()%255);
+            events[event_write_index].block.hash[idx] = (unsigned char)(rand()%255);
+          }
 
           // Add transactions to the block
           events[event_write_index].block.n_transactions = num_tx;
@@ -198,6 +204,9 @@ behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
       exit(1);
     }
 
+    // Send the hardware configuration data to the hardware miner
+    c_profile.send(&hwconfig, sizeof(hwconfig));
+
     // Inject the events from the event configuration file
     for (idx = 0; idx < event_write_index; idx++)
     {
@@ -228,6 +237,7 @@ behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
 
     // Terminate the simulation after the desired amount of time
     waitfor(simulation_time);
-    exit (0);
+    //printf("Simulation Complete\n");
+    //exit (0);
   }
 };

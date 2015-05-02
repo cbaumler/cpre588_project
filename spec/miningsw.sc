@@ -7,12 +7,18 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 #include "../api/coreapi.h"
 
 #define MINER_ID   0
 
 import "c_double_handshake";	// import the standard channel
 import "rpcclient";
+
+typedef struct {
+  unsigned int nonce;
+	bool status;
+} Return_Nonce;
 
 behavior MiningSW (
   i_sender c_request,
@@ -24,53 +30,77 @@ behavior MiningSW (
 
   void main(void)
   {
-    int err, idx, block_count;
+    int err, block_count, idx;
     BlockTemplate btemplate;
     Block block;
+    Return_Nonce nonce;
 
-    // TODO: This is test code to show how to use the RPC interface.
-    // It should be replaced with the actual mining software code.
-
-    // Get a block template for creating a block header
-    err = client.getblocktemplate(MINER_ID, &btemplate);
-    if (err == -1)
+    while (1)
     {
-      fprintf(stderr, "miningsw: getblocktemplate failed\n");
-      exit (1);
+
+      // Get a block template for creating a block header
+      err = client.getblocktemplate(MINER_ID, &btemplate);
+      if (err == -1)
+      {
+        fprintf(stderr, "miningsw: getblocktemplate failed\n");
+        exit (1);
+      }
+
+      // Create a block header
+      block.header.version = btemplate.version;
+      memcpy(block.header.prev_hash, btemplate.prev_hash, NUM_HASH_BYTES);
+      block.header.current_time = (unsigned int)time(0);
+      block.header.nbits = btemplate.bits;
+
+      for (idx = 0; idx < NUM_HASH_BYTES; idx++)
+      {
+        // TODO: Compute an actual hash if time permits
+        block.header.merkle_root[idx] = (unsigned char)(rand()%255);
+      }
+
+      // Send the block header to the hardware miner
+    	printf("sw_miner: sending block header\n");
+      c_blk_hdr.send(&block.header, sizeof(block.header));
+
+      // Wait for the hardware miner to find a nonce that gives a valid hash
+      c_nonce.receive(&nonce, sizeof(nonce));
+      if (nonce.status)
+      {
+        block.header.nonce = nonce.nonce;
+      }
+      else
+      {
+        // TODO: Handle failure to find nonce
+        printf("swminer: failed to find nonce\n");
+      }
+  	  printf("sw_miner: rx nonce: %u, valid: %d\n", nonce.nonce, nonce.status);
+
+      // TODO: We need to be able to interrupt the hw miner if a block is added
+      // to the blockchain by the P2P network
+      // Get the the number of blocks in the blockchain
+/*
+      block_count = client.getblockcount();
+      if (block_count == -1)
+      {
+        fprintf(stderr, "miningsw: getblockcount failed\n");
+        exit (1);
+      }
+*/
+
+      // Submit the block to the P2P network
+      // TODO
+/*
+      //block.hash = 0x12345;
+      block.n_transactions = btemplate.num_transactions;
+      memcpy(block.transactions, btemplate.transactions, sizeof (block.transactions));
+      err = client.submitblock(&block);
+      if (err == -1)
+      {
+        fprintf(stderr, "miningsw: submitblock failed\n");
+        exit (1);
+      }
+*/
     }
-
-    printf("--------------\nMining Software Debug:\n");
-    printf("version=%d\n", btemplate.version);
-    printf("previous_block_hash=%d\n", btemplate.previous_block_hash);
-    printf("num_transactions=%d\n", btemplate.num_transactions);
-    for (idx = 0; idx < btemplate.num_transactions; idx++)
-    {
-      printf("txid=%d\n", btemplate.transactions[idx].txid);
-    }
-    printf("current_time=%d\n", btemplate.current_time);
-    printf("bits=%d\n", btemplate.bits);
-
-    // Get the the number of blocks in the blockchain
-    block_count = client.getblockcount();
-    if (block_count == -1)
-    {
-      fprintf(stderr, "miningsw: getblockcount failed\n");
-      exit (1);
-    }
-
-    printf("block_count=%d\n", block_count);
-
-    // Submit Block
-    block.hash = 0x12345;
-    block.n_transactions = btemplate.num_transactions;
-    memcpy(block.transactions, btemplate.transactions, sizeof (block.transactions));
-    err = client.submitblock(&block);
-    if (err == -1)
-    {
-      fprintf(stderr, "miningsw: submitblock failed\n");
-      exit (1);
-    }
-
   }
 
 };
