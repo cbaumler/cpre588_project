@@ -151,10 +151,10 @@ behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
 
           // To avoid the complexity of having to determine these, use
           // a random number. This shouldn't matter for our simulations.
+          events[event_write_index].block.header.merkle_root = (unsigned int)rand();
           for (idx = 0; idx < NUM_HASH_BYTES; idx++)
           {
             events[event_write_index].block.header.prev_hash[idx] = (unsigned char)(rand()%255);
-            events[event_write_index].block.header.merkle_root[idx] = (unsigned char)(rand()%255);
             events[event_write_index].block.hash[idx] = (unsigned char)(rand()%255);
           }
 

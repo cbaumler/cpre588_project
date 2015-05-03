@@ -4,7 +4,7 @@
 
 SCC = scrc
 
-SCCOPT  = -vv -ww -g
+SCCOPT  = -vv -g #-ww
 
 all: tb
 

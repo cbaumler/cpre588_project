@@ -26,7 +26,81 @@ behavior MiningSW (
   i_sender c_blk_hdr,
   i_receiver c_nonce)
 {
+
   RPCClient client(c_request, c_response);
+
+  int hash_txids(int in1, int in2)
+  {
+    // Instead of actually computing a hash, just add the ids together.
+    // This simplification reduces scope and doesn't affect the simulation.
+    return (in1 + in2);
+  }
+
+  int compute_merkle_root (BlockTemplate btemplate)
+  {
+    int txids[MAX_TRANSACTIONS];
+    int num_tx_left, num_tx_pairs, idx, idx1, idx2;
+    int merkle_root;
+
+    // Compute the merkle root by hashing together txids as follows:
+    //
+    //      ABCDEEEE .......Merkle root
+    //        /        \
+    //     ABCD        EEEE
+    //    /    \      /
+    //   AB    CD    EE .......E is paired with itself
+    //  /  \  /  \  /
+    //  A  B  C  D  E .........Transactions
+
+    // Get the transaction IDs (txids) of all the transactions in the block
+    for (idx = 0; idx < btemplate.num_transactions; idx++)
+    {
+      txids[idx] = btemplate.transactions[idx].txid;
+    }
+
+    // If the number of transactions is odd, duplicate the last txid
+    // We need an even number of txids to compute the merkle root
+    if (btemplate.num_transactions % 2)
+    {
+      txids[idx] = txids[idx-1];
+      num_tx_pairs = (btemplate.num_transactions + 1) / 2;
+    }
+    else
+    {
+      num_tx_pairs = btemplate.num_transactions / 2;
+    }
+
+    // Begin hashing togther pairs of txids
+    while (num_tx_pairs > 0)
+    {
+      idx2 = 0;
+      num_tx_left = 0;
+      for (idx1 = 0; idx1 < num_tx_pairs; idx1++)
+      {
+         txids[idx1] = hash_txids(txids[idx2], txids[idx2+1]);
+         idx2 += 2;
+         num_tx_left++;
+      }
+
+      if (num_tx_left == 1)
+      {
+        // We've reached the root
+        merkle_root = txids[0];
+        num_tx_pairs = 0;
+      }
+      else if (num_tx_left % 2)
+      {
+        // Odd number left, duplicate the last one
+        num_tx_pairs = (num_tx_left + 1) / 2;
+        txids[idx1] = txids[idx1-1];
+      }
+      else
+      {
+        // Even number left
+        num_tx_pairs = num_tx_left / 2;
+      }
+    }
+  }
 
   void main(void)
   {
@@ -51,12 +125,7 @@ behavior MiningSW (
       memcpy(block.header.prev_hash, btemplate.prev_hash, NUM_HASH_BYTES);
       block.header.current_time = (unsigned int)time(0);
       block.header.nbits = btemplate.bits;
-
-      for (idx = 0; idx < NUM_HASH_BYTES; idx++)
-      {
-        // TODO: Compute an actual hash if time permits
-        block.header.merkle_root[idx] = (unsigned char)(rand()%255);
-      }
+      block.header.merkle_root = compute_merkle_root(btemplate);
 
       // Send the block header to the hardware miner
     	printf("sw_miner: sending block header\n");
@@ -77,9 +146,9 @@ behavior MiningSW (
 
       // TODO: We need to be able to interrupt the hw miner if a block is added
       // to the blockchain by the P2P network
-      
+
       // DJK: c_abort.send();
-      
+
       // Get the the number of blocks in the blockchain
 /*
       block_count = client.getblockcount();

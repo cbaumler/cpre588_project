@@ -99,7 +99,7 @@ typedef struct
   unsigned int  version;                       // Bitcoin protocol version
   unsigned char prev_hash[NUM_HASH_BYTES];     // Hash of previous block header
   unsigned int  current_time;                  // Timestamp
-  unsigned char merkle_root[NUM_HASH_BYTES];   // Constructed from txids
+  unsigned int  merkle_root;                   // Constructed from txids
   unsigned int  nbits;                         // Difficulty threshold
   unsigned int  nonce;                         // Random number
 
@@ -190,6 +190,5 @@ typedef struct {
   int total_num_hashes;
   int total_sim_time;
   int total_cost;
-  
-} PerformanceData;
 
+} PerformanceData;
