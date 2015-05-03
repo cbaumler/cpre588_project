@@ -56,25 +56,6 @@ typedef struct {
 } Return_Nonce;
 
 
-typedef struct {
-
-	// Time statistics
-  long long time_total;     // Time since start of simulation
-  long long time_blk_start; // Time at start of block processing
-  long long time_blk_stop;  // Time at end of current block processing
-  long long time_blk;       // Time for processing current block
-
-  // Hash count statistics
-  long hash_total;          // Total hash count since start of simulation
-  long hash_blk;            // Current hash count accumulator for current block
-
-  // Power statistics
-  long power_total;         // Total power since start of simulation
-  long power_blk;           // Current power accumulator for current block
-
-} Statistics;
-
-
 
 behavior Process_Block_Header(i_receiver  c_blk_hdr,
                               i_sender    c_nonce,
@@ -85,7 +66,7 @@ behavior Process_Block_Header(i_receiver  c_blk_hdr,
   // Behavior-global data
 	BlockHeader g_blk_hdr;
 	Return_Nonce g_nonce;
-	Statistics g_stats;
+	PerformanceData g_stats;
 
 
 	//***********************************//
@@ -529,7 +510,8 @@ behavior Process_Block_Header(i_receiver  c_blk_hdr,
 
   		if (fulltest(hash, target)) {
   			*hashes_done = stat_ctr;
-  			printf("\nHW_Hash.scanhash(VALID):nonce = %d, count = %lu, sim time = %6s", n, stat_ctr, time2str(now()));
+  			printf("HW_Hash.scanhash(VALID):nonce = %d, count = %lu, sim time = %6s\n", n, stat_ctr, time2str(now()));
+  			g_blk_hdr.nonce = n;
   			//exit(0);
   			return true;
   		}
@@ -628,10 +610,9 @@ behavior Process_Block_Header(i_receiver  c_blk_hdr,
 
 			reset_stats();
 
-      printf("\nHW_Hash:c_blk_hdr.receive()");
-
+      printf("HW_Hash:c_blk_hdr.receive()\n");
       c_blk_hdr.receive(&g_blk_hdr, sizeof(g_blk_hdr));
-      printf("\nHW_Hash:blk_hdr received");
+      printf("HW_Hash:blk_hdr received\n");
 
       // Run the hash search function, using the watchdog timer to
       // prevent the search from running endlessley
@@ -685,7 +666,7 @@ behavior HW_Hash(i_receiver  c_blk_hdr,
   int command;
 
   Return_Nonce timeout_nonce = {0xffffff, false};
-  Statistics timeout_statistics = {0, 0, 0, 0, 0, 0, 0, 0};
+  PerformanceData timeout_statistics = {0, 0, 0, 0, 0, 0, 0, 0};
 
   Process_Block_Header process_block_header(c_blk_hdr,
                                             c_nonce,
@@ -701,24 +682,23 @@ behavior HW_Hash(i_receiver  c_blk_hdr,
 
   void main(void) {
     while (true) {
-    	printf("\nHW_Hash:wait(e_ready)");
+    	printf("HW_Hash:wait(e_ready)\n");
   	  wait(e_ready);
     	while (true) {
-    		printf("\nHW_Hash:try-trap");
     		try             {process_block_header.main();}
     		trap (e_reset)  {event_reset.main();}
     		trap (e_abort)  {event_abort.main();}
     		trap (e_tout)   {event_tout.main();}
 
     		if (command == 1) {
-    		  printf("\nHW_Hash:Reset");
+    		  printf("HW_Hash:Reset\n");
     			break;
     		}
     		else if (command == 2) {
-    		  printf("\nHW_Hash:Abort");
+    		  printf("HW_Hash:Abort\n");
     		}
     		else if (command == 3) {
-    		  printf("\nHW_Hash:Timeout");
+    		  printf("HW_Hash:Timeout\n");
           c_nonce.send(&timeout_nonce, sizeof(timeout_nonce));
           //c_perf.send(&g_stats, sizeof(g_stats));    // DJK: Still need to figure
                                                        //      out how to send stats

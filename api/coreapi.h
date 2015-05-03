@@ -12,6 +12,10 @@
 #define MAX_UTXO                      1024
 #define NUM_HASH_BYTES                  32
 
+#define NUM_CODE_BLOCKS                 26
+#define MAX_MINED_BLOCKS                48
+
+
 // These are the types of RPC messages
 typedef enum
 {
@@ -155,3 +159,37 @@ typedef struct
   RPCData data;
 
 } RPCMessage;
+
+typedef struct
+{
+  int time;
+  int power;
+
+} Stats;
+
+typedef struct {
+
+  // Time statistics
+  long long time_total;     // Time since start of simulation
+  long long time_blk_start; // Time at start of block processing
+  long long time_blk_stop;  // Time at end of current block processing
+  long long time_blk;       // Time for processing current block
+
+  // Hash count statistics
+  long hash_total;          // Total hash count since start of simulation
+  long hash_blk;            // Current hash count accumulator for current block
+
+  // Power statistics
+  long power_total;         // Total power since start of simulation
+  long power_blk;           // Current power accumulator for current block
+
+  Stats codeblocks[NUM_CODE_BLOCKS];
+  Stats mined_blocks[MAX_MINED_BLOCKS];
+  int num_mined_blocks;
+  int total_power;
+  int total_num_hashes;
+  int total_sim_time;
+  int total_cost;
+  
+} PerformanceData;
+

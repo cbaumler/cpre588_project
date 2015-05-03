@@ -12,7 +12,7 @@ import "hw_miner";
 import "c_double_handshake";	// import the standard channel
 
 behavior Design(i_receiver c_p2p_request, i_sender c_p2p_response,
-  i_receiver c_profile, i_sender c_performance)
+  i_receiver c_profile, i_sender c_perf)
 {
   // Channels
 
@@ -36,7 +36,7 @@ behavior Design(i_receiver c_p2p_request, i_sender c_p2p_response,
   Core core(c_wallet_request, c_wallet_response, c_swminer_request,
     c_swminer_response, c_p2p_request, c_p2p_response);
   MiningSW miningsw(c_swminer_request, c_swminer_response, c_blk_hdr, c_nonce);
-  HW_Miner mininghw(c_abort, c_blk_hdr, c_nonce, c_performance, c_profile, c_reset);
+  HW_Miner mininghw(c_abort, c_blk_hdr, c_nonce, c_perf, c_profile, c_reset);
 
   void main(void)
   {

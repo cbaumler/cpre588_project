@@ -54,7 +54,7 @@ behavior HW_Miner(i_receiver   c_abort,
   	  hw_timer.main();
   	  hw_hash.main();	
     }
-    printf("\nHW_Miner:threads stopped");  	
+    printf("HW_Miner:threads stopped\n");  	
     
   } // end HW_Miner.main()
 

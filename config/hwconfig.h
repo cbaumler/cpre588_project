@@ -7,7 +7,7 @@
 
 #define MAX_NAME_LENGTH    256
 
-#define NUM_HW_PARAMETERS   16
+#define NUM_HW_PARAMETERS   18
 
 // This struct defines the hardware input parameters.
 // Note that these must be of type int to be parsed correctly.
@@ -15,8 +15,10 @@ typedef struct
 {
   // PE Performance
   int clock;
-  int pipeline_depth;
-  int parallel;
+  
+  // Memory Performance
+  int mread;
+  int mwrite;  
 
   // Composite Operations
   int bif;
@@ -35,6 +37,10 @@ typedef struct
   int comp;
 
   // Power Consumption
-  int pwr;
+  int timeout;
+  
+  // Power Consumption
+  int pwr_static;
+  int pwr_dynamic;
 
 } HWConfig;

@@ -14,7 +14,9 @@ behavior HW_Config(i_receiver c_profile,
     HWConfig hwconfig;
 
 		while(true) {
+			printf("DEBUG-hw_config:c_profile.receive(), hwconfig size = %d\n", sizeof(hwconfig));
 		  c_profile.receive(&hwconfig, sizeof(hwconfig)); // TODO: Use the hardware config
+		  printf("DEBUG-hw_config:profile received\n");
 		  notify(e_ready);
 		  c_reset.receive(&temp, sizeof(temp));
 		  notify(e_reset);

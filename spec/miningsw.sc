@@ -77,6 +77,9 @@ behavior MiningSW (
 
       // TODO: We need to be able to interrupt the hw miner if a block is added
       // to the blockchain by the P2P network
+      
+      // DJK: c_abort.send();
+      
       // Get the the number of blocks in the blockchain
 /*
       block_count = client.getblockcount();
