@@ -41,7 +41,7 @@ behavior CoreInit (out Blockchain blockchain, out TransactionPool transaction_po
 behavior Core (i_receiver c_wallet_request, i_sender c_wallet_response,
   i_receiver c_swminer_request, i_sender c_swminer_response,
   i_receiver c_p2p_request, i_sender c_p2p_response,
-  in unsigned int mining_difficulty)
+  in unsigned int mining_difficulty, i_sender c_core_log)
 {
 
   // This data structure represents a local copy of the blockchain
@@ -69,7 +69,8 @@ behavior Core (i_receiver c_wallet_request, i_sender c_wallet_response,
     transaction_pool,
     mining_difficulty,
     block_mutex,
-    pool_mutex);
+    pool_mutex,
+    c_core_log);
 
   // Create RPC server for communicating with wallet RPC client
     RPCServer wallet_server(
@@ -81,7 +82,8 @@ behavior Core (i_receiver c_wallet_request, i_sender c_wallet_response,
     transaction_pool,
     mining_difficulty,
     block_mutex,
-    pool_mutex);
+    pool_mutex,
+    c_core_log);
 
   // Create RPC server for communicating with Bitcoin Peer-to-Peer network
     RPCServer p2p_server(
@@ -93,7 +95,8 @@ behavior Core (i_receiver c_wallet_request, i_sender c_wallet_response,
     transaction_pool,
     mining_difficulty,
     block_mutex,
-    pool_mutex);
+    pool_mutex,
+    c_core_log);
 
   void main (void)
   {

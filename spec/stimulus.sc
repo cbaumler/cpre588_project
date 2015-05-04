@@ -9,33 +9,18 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-# include "../api/coreapi.h"
+# include "../api/coreapi.h"     // Defines the core Bitcoin interfaces
 #include "../config/hwconfig.h"  // Defines hardware config parameters
+#include "../api/testapi.h"      // Defines test interfaces
 
 #define FGETS_MAX   100
 
 import "c_double_handshake";	// import the standard channel
 import "rpcclient";
 
-typedef enum
-{
-  CREATE_BLOCK,
-  CREATE_TRANSACTION,
-  SPEND_BITCOIN
-
-} EventType;
-
-typedef struct
-{
-  int timestamp;
-  EventType type;
-  Block block;
-  Transaction transaction;
-
-} Event;
-
 behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
-  i_sender c_profile, i_sender c_spend, out unsigned int mining_difficulty_output)
+  i_sender c_profile, i_sender c_wallet_cmd,
+  out unsigned int mining_difficulty_output)
 {
   RPCClient client(c_p2p_request, c_p2p_response);
 
@@ -59,7 +44,6 @@ behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
     char line[FGETS_MAX];
     char temp[FGETS_MAX];
     char event_str[64];
-    bool spend = true;
 
     p_hwconfig = (int*)(&(hwconfig.clock));
 
@@ -204,6 +188,16 @@ behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
             event_write_index++;
           }
         }
+        else if (strcmp(event_str, "REQUEST_BALANCE") == 0)
+        {
+          for (idx = 0; idx < num_tx; idx++)
+          {
+            // Create an event to request the user's wallet balance
+            events[event_write_index].type = REQUEST_BALANCE;
+            events[event_write_index].timestamp = timestamp;
+            event_write_index++;
+          }
+        }
         else
         {
           fprintf(stderr, "Invalid action in events.cfg: %s\n", event_str);
@@ -246,10 +240,10 @@ behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
           exit (1);
         }
       }
-      else if (events[idx]. type == SPEND_BITCOIN)
+      else if ((events[idx].type == SPEND_BITCOIN) ||
+              (events[idx].type == REQUEST_BALANCE))
       {
-        printf("Stimulus: Spending Bitcoin\n");
-        c_spend.send(&spend, sizeof(spend));
+        c_wallet_cmd.send(&(events[idx].type), sizeof(EventType));
       }
     }
 

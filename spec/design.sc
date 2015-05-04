@@ -5,15 +5,17 @@
 *  Description: Top level design behavior for the Bitcoin miner
 ****************************************************************************/
 
+#include <stdio.h>
+
 import "wallet";
 import "core";
 import "miningsw";
 import "hw_miner";
-import "c_double_handshake";	// import the standard channel
+import "c_double_handshake";	// import the standard double handshake channel
 
 behavior Design(i_receiver c_p2p_request, i_sender c_p2p_response,
-  i_receiver c_profile, i_sender c_perf, i_receiver c_spend,
-  in event e_log_wallet, i_sender c_wallet_log, in unsigned int mining_difficulty)
+  i_receiver c_profile, i_sender c_perf, i_receiver c_wallet_cmd,
+  i_sender c_wallet_log, i_sender c_core_log, in unsigned int mining_difficulty)
 {
   // Channels
 
@@ -33,9 +35,9 @@ behavior Design(i_receiver c_p2p_request, i_sender c_p2p_response,
 
   // Behaviors
 
-  Wallet wallet(c_wallet_request, c_wallet_response, c_spend, e_log_wallet, c_wallet_log);
+  Wallet wallet(c_wallet_request, c_wallet_response, c_wallet_cmd, c_wallet_log);
   Core core(c_wallet_request, c_wallet_response, c_swminer_request,
-    c_swminer_response, c_p2p_request, c_p2p_response, mining_difficulty);
+    c_swminer_response, c_p2p_request, c_p2p_response, mining_difficulty, c_core_log);
   MiningSW miningsw(c_swminer_request, c_swminer_response, c_blk_hdr, c_nonce, c_abort);
   HW_Miner mininghw(c_abort, c_blk_hdr, c_nonce, c_perf, c_profile, c_reset);
 

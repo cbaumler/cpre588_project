@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "../api/coreapi.h"
+#include "../api/testapi.h"
 
 import "c_double_handshake";	// import the standard channel
 import "rpcclient";
@@ -16,8 +17,8 @@ import "rpcclient";
 #define USER_ADDRESS   2222222
 
 behavior NetworkWallet (i_sender c_request, i_receiver c_response,
-  i_sender c_hw_wallet_in, i_receiver c_hw_wallet_out, i_receiver c_spend,
-  in event e_log_wallet, i_sender c_wallet_log)
+  i_sender c_hw_wallet_in, i_receiver c_hw_wallet_out, i_receiver c_wallet_cmd,
+  i_sender c_wallet_log)
 {
   RPCClient client(c_request, c_response);
   int tx_payments_received[MAX_UTXO];
@@ -78,20 +79,15 @@ behavior NetworkWallet (i_sender c_request, i_receiver c_response,
   void spend_bitcoin(void)
   {
     Outpoint input_tx;
-    bool spend;
     bool request_key = true;
-    int err, key, txid;
+    int err, key, txid, balance, address;
     TxOut info;
     int raw_transaction;
     int signed_transaction;
-    int balance;
-
-    // Wait for a command to spend Bitcoin
-    c_spend.receive(&spend, sizeof(spend));
+    char log_msg[MAX_WALLET_LOG_MSG_SIZE];
 
     // Refresh the user's balance data
     balance = get_user_balance();
-    printf("Wallet: Balance prior to transaction is %d BTC\n", balance);
 
     // Check if the user has UTXOs available
     if (num_user_utxos > 0)
@@ -108,7 +104,11 @@ behavior NetworkWallet (i_sender c_request, i_receiver c_response,
         exit (1);
       }
 
-      raw_transaction = client.createrawtransaction(input_tx, rand(), info.value);
+      // Send to a random address for the simulation
+      address = rand();
+
+      // Create a raw transaction
+      raw_transaction = client.createrawtransaction(input_tx, address, info.value);
       if (raw_transaction == -1)
       {
         fprintf(stderr, "wallet: createrawtransaction failed\n");
@@ -136,33 +136,51 @@ behavior NetworkWallet (i_sender c_request, i_receiver c_response,
       }
       tx_payments_sent[num_payments_sent] = txid;
       num_payments_sent++;
-      printf("Wallet: Sent %d BTC Transaction to P2P Network\n", info.value);
+      sprintf(log_msg, "User Requested Spend: %d BTC sent to %d (unconfirmed)\n",
+        info.value, address);
     }
     else
     {
       // No Bitcoin available in wallet
-      printf("No Bitcoin available to spend\n");
+      sprintf(log_msg, "User Requested Spend: No BTC Available\n");
     }
+
+    // Report results to the monitor
+    printf("%s", log_msg);
+    c_wallet_log.send(log_msg, sizeof(log_msg));
   }
 
-  void send_log(void)
+  void request_balance(void)
   {
-    int log_data;
+    int balance;
+    char log_msg[MAX_WALLET_LOG_MSG_SIZE];
 
-    c_wallet_log.send(&log_data, sizeof(log_data));
+    // Get the balance
+    balance = get_user_balance();
+
+    // Report results to the monitor
+    sprintf(log_msg, "User Requested Balance: %d BTC\n", balance);
+    printf("%s", log_msg);
+    c_wallet_log.send(log_msg, sizeof(log_msg));
   }
 
   void main (void)
   {
+    EventType action;
+
     while (true)
     {
-      while (true)
+      // Wait for wallet commands
+      c_wallet_cmd.receive(&action, sizeof(action));
+
+      // Perform indicated wallet action
+      if (action == SPEND_BITCOIN)
       {
-        //try {spend_bitcoin();}
-        //trap (e_log_wallet) {this.send_log();}
-
         spend_bitcoin();
-
+      }
+      else if (action == REQUEST_BALANCE)
+      {
+        request_balance();
       }
     }
   }

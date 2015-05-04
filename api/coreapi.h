@@ -6,6 +6,9 @@
 *               simplified per the scope of this project.
 ****************************************************************************/
 
+#ifndef _COREAPI_H_
+#define _COREAPI_H_
+
 #define BLOCK_VERSION                    2
 #define MAX_TRANSACTIONS                10
 #define MAX_BLOCKCHAIN_LENGTH           64
@@ -193,3 +196,5 @@ typedef struct {
   int total_cost;
 
 } PerformanceData;
+
+#endif /* _COREAPI_H_ */

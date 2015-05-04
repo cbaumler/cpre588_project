@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <time.h>
 #include "../api/coreapi.h"
+#include "../api/testapi.h"
 
 import "c_double_handshake";	// import the standard double handshake channel
 import "c_mutex";	            // import the standard mutex channel
@@ -22,7 +23,8 @@ behavior RPCServer (
   out TransactionPool pool_out,
   in unsigned int target_threshold,
   i_semaphore block_mutex,
-  i_semaphore pool_mutex)
+  i_semaphore pool_mutex,
+  i_sender c_core_log)
 {
 
   void create_block_template (RPCMessage *packet)
@@ -152,6 +154,35 @@ behavior RPCServer (
     }
   }
 
+  void log_basic_string(char *string)
+  {
+    char log_msg[MAX_CORE_LOG_MSG_SIZE];
+    sprintf(log_msg, "%s\n", string);
+    c_core_log.send(log_msg, sizeof(log_msg));
+  }
+
+  void log_block(Block block)
+  {
+    //char log_msg[MAX_CORE_LOG_MSG_SIZE];
+    //sprintf(log_msg, "\n\nBlock Added to Pool:\nHash: %s")
+  }
+
+  void log_transaction(Transaction tx)
+  {
+/*
+    char log_msg[MAX_CORE_LOG_MSG_SIZE];
+
+    sprintf(log_msg, "\n\nTransaction Added to Pool:\n");
+    sprintf(log_msg, "%sTXID: %d\n", log_msg, tx.txid);
+    sprintf(log_msg, "%sInput ID: %d\n", log_msg, tx.input.txid);
+    sprintf(log_msg, "%sOutput ID: %d\n", log_msg, tx.output.txid);
+    sprintf(log_msg, "%sAddress: %d\n", log_msg, tx.address);
+    sprintf(log_msg, "%sAmount: %d\n", log_msg, tx.amount);
+
+    c_core_log.send(log_msg, sizeof(log_msg));
+*/
+  }
+
   void main (void)
   {
     RPCMessage packet;
@@ -172,6 +203,7 @@ behavior RPCServer (
         {
           // Create a block template payload
           create_block_template(&packet);
+          log_basic_string("Sending Block Template to SW Miner");
           break;
         }
         case GET_BLOCK_COUNT:
@@ -188,11 +220,14 @@ behavior RPCServer (
           memcpy(&(bc_out.entries[bc_in.head_block]),
             &(packet.data.block), sizeof(Block));
           block_mutex.release();
+          log_block(packet.data.block);
+          log_basic_string("New Block Submitted to the P2P Network");
           break;
         }
         case GET_TX_OUT_SET_INFO:
         {
           build_utxo_set(&packet);
+          log_basic_string("Providing UTXO Set Data to Wallet");
           break;
         }
         case GET_TX_OUT:
@@ -215,6 +250,8 @@ behavior RPCServer (
 
           // Create a local copy of the transaction
           memcpy(&local_transaction_copy, &(packet.data.transaction), sizeof(Transaction));
+
+          log_basic_string("Creating Raw Transaction for Wallet");
           break;
         }
         case SIGN_RAW_TRANSACTION:
@@ -234,6 +271,7 @@ behavior RPCServer (
             fprintf(stderr, "Couldn't sign raw transaction\n");
             exit (1);
           }
+          log_basic_string("Signing Raw Transaction for Wallet");
           break;
         }
         case SEND_RAW_TRANSACTION:
@@ -251,12 +289,14 @@ behavior RPCServer (
             }
             pool_mutex.release();
             block_mutex.release();
+            log_transaction(local_transaction_copy);
           }
           else
           {
             fprintf(stderr, "Couldn't send signed transaction\n");
             exit (1);
           }
+          log_basic_string("Wallet is Sending a Transaction to the P2P Network");
           break;
         }
         case DEV_SEND_TRANSACTION:
@@ -272,6 +312,8 @@ behavior RPCServer (
           }
           pool_mutex.release();
           block_mutex.release();
+          log_transaction(packet.data.transaction);
+          log_basic_string("Receiving a New Transaction from the P2P Network");
           break;
         }
         default:
