@@ -696,6 +696,7 @@ behavior HW_Hash(i_receiver  c_blk_hdr,
     		}
     		else if (command == 2) {
     		  printf("HW_Hash:Abort\n");
+					c_nonce.send(&timeout_nonce, sizeof(timeout_nonce));
     		}
     		else if (command == 3) {
     		  printf("HW_Hash:Timeout\n");

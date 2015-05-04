@@ -35,7 +35,7 @@ behavior Design(i_receiver c_p2p_request, i_sender c_p2p_response,
   Wallet wallet(c_wallet_request, c_wallet_response);
   Core core(c_wallet_request, c_wallet_response, c_swminer_request,
     c_swminer_response, c_p2p_request, c_p2p_response);
-  MiningSW miningsw(c_swminer_request, c_swminer_response, c_blk_hdr, c_nonce);
+  MiningSW miningsw(c_swminer_request, c_swminer_response, c_blk_hdr, c_nonce, c_abort);
   HW_Miner mininghw(c_abort, c_blk_hdr, c_nonce, c_perf, c_profile, c_reset);
 
   void main(void)
