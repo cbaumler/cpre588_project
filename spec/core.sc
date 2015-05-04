@@ -27,14 +27,7 @@ behavior CoreInit (out Blockchain blockchain, out TransactionPool transaction_po
     {
       blockchain.entries[0].hash[idx] = (unsigned char)(rand()%255);
     }
-    //blockchain.entries[0].transactions[0].txid = 0;
-    //blockchain.entries[0].transactions[1].txid = 1;
     blockchain.entries[0].n_transactions = 0;
-
-    // TODO: Make up some transactions in the pool for now
-    //transaction_pool.pool[0].txid = 2;
-    //transaction_pool.pool[1].txid = 3;
-    //transaction_pool.n_in_pool = 2;
   }
 };
 
