@@ -34,7 +34,7 @@ typedef struct
 } Event;
 
 behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
-  i_sender c_profile)
+  i_sender c_profile, out unsigned int mining_difficulty_output)
 {
   RPCClient client(c_p2p_request, c_p2p_response);
 
@@ -128,6 +128,7 @@ behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
       // Read the mining difficulty
       fgets(line, FGETS_MAX, fevents);
       sscanf(line, "%s %d", temp, &mining_difficulty);
+      mining_difficulty_output = mining_difficulty;
       printf("Mining difficulty: %d\n", mining_difficulty);
 
       // Read the blank line

@@ -153,6 +153,7 @@ behavior Controller(i_sender c_request, i_receiver c_response,
     memcpy(block.header.prev_hash, btemplate.prev_hash, NUM_HASH_BYTES);
     block.header.current_time = (unsigned int)time(0);
     block.header.nbits = btemplate.bits;
+    printf("!!!mining difficulty = %d\n", block.header.nbits);
     block.header.merkle_root = compute_merkle_root(btemplate);
 
     block.n_transactions = btemplate.num_transactions;

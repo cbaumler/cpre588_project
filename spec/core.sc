@@ -40,7 +40,8 @@ behavior CoreInit (out Blockchain blockchain, out TransactionPool transaction_po
 
 behavior Core (i_receiver c_wallet_request, i_sender c_wallet_response,
   i_receiver c_swminer_request, i_sender c_swminer_response,
-  i_receiver c_p2p_request, i_sender c_p2p_response)
+  i_receiver c_p2p_request, i_sender c_p2p_response,
+  in unsigned int mining_difficulty)
 {
 
   // This data structure represents a local copy of the blockchain
@@ -48,10 +49,6 @@ behavior Core (i_receiver c_wallet_request, i_sender c_wallet_response,
 
   // This data structure represents the local pool of new transactions
   TransactionPool transaction_pool;
-
-  // Current threshold below which a block header hash must be to be valid
-  // TODO: Read this from the stimulus
-  int target_threshold = 0xFFFFFF;
 
   // Channel for modifying the blockchain
   c_mutex block_mutex;
@@ -70,7 +67,7 @@ behavior Core (i_receiver c_wallet_request, i_sender c_wallet_response,
     blockchain,
     transaction_pool,
     transaction_pool,
-    target_threshold,
+    mining_difficulty,
     block_mutex,
     pool_mutex);
 
@@ -82,7 +79,7 @@ behavior Core (i_receiver c_wallet_request, i_sender c_wallet_response,
     blockchain,
     transaction_pool,
     transaction_pool,
-    target_threshold,
+    mining_difficulty,
     block_mutex,
     pool_mutex);
 
@@ -94,7 +91,7 @@ behavior Core (i_receiver c_wallet_request, i_sender c_wallet_response,
     blockchain,
     transaction_pool,
     transaction_pool,
-    target_threshold,
+    mining_difficulty,
     block_mutex,
     pool_mutex);
 

@@ -20,7 +20,7 @@ behavior RPCServer (
   out Blockchain bc_out,
   in TransactionPool pool_in,
   out TransactionPool pool_out,
-  in int target_threshold,
+  in unsigned int target_threshold,
   i_semaphore block_mutex,
   i_semaphore pool_mutex)
 {

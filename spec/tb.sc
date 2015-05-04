@@ -18,8 +18,10 @@ behavior Main
 	c_double_handshake c_profile;
 	c_double_handshake c_perf;
 
-	Stimulus stimulus(c_p2p_request, c_p2p_response, c_profile);
-	Design design(c_p2p_request, c_p2p_response, c_profile, c_perf);
+	unsigned int mining_difficulty;
+
+	Stimulus stimulus(c_p2p_request, c_p2p_response, c_profile, mining_difficulty);
+	Design design(c_p2p_request, c_p2p_response, c_profile, c_perf, mining_difficulty);
 	Monitor monitor(c_core_results, c_perf);
 
 	int main (void)
