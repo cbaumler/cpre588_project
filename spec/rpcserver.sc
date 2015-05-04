@@ -157,30 +157,59 @@ behavior RPCServer (
   void log_basic_string(char *string)
   {
     char log_msg[MAX_CORE_LOG_MSG_SIZE];
-    sprintf(log_msg, "%s\n", string);
+    sprintf(log_msg, "%s\n\n", string);
     c_core_log.send(log_msg, sizeof(log_msg));
   }
 
   void log_block(Block block)
   {
-    //char log_msg[MAX_CORE_LOG_MSG_SIZE];
-    //sprintf(log_msg, "\n\nBlock Added to Pool:\nHash: %s")
+    char log_msg[MAX_CORE_LOG_MSG_SIZE];
+    int idx;
+
+    sprintf(log_msg, "Block Added to local Blockchain:\n");
+    sprintf(log_msg, "%s-->Hash: ", log_msg);
+    for (idx = 0; idx < NUM_HASH_BYTES; idx++)
+    {
+      sprintf(log_msg, "%s%x", log_msg, block.hash[idx]);
+    }
+    sprintf(log_msg, "%s\n-->Num Transactions: %d\n", log_msg, block.n_transactions);
+    for (idx = 0; idx < block.n_transactions; idx++)
+    {
+      sprintf(log_msg, "%s-->Transaction:\n");
+      sprintf(log_msg, "%s------>TXID: %d\n", log_msg, block.transactions[idx].txid);
+      sprintf(log_msg, "%s------>Input ID: %d\n", log_msg, block.transactions[idx].input.txid);
+      sprintf(log_msg, "%s------>Output ID: %d\n", log_msg, block.transactions[idx].output.txid);
+      sprintf(log_msg, "%s------>Address: %d\n", log_msg, block.transactions[idx].address);
+      sprintf(log_msg, "%s------>Amount: %d\n", log_msg, block.transactions[idx].amount);
+    }
+    sprintf(log_msg, "%s-->Header:\n", log_msg);
+    sprintf(log_msg, "%s------>Version: %d\n", log_msg, block.header.version);
+    sprintf(log_msg, "%s------>Previous Hash: ", log_msg);
+    for (idx = 0; idx < NUM_HASH_BYTES; idx++)
+    {
+      sprintf(log_msg, "%s%x", log_msg, block.header.prev_hash[idx]);
+    }
+    sprintf(log_msg, "%s\n------>Version: %d\n", log_msg, block.header.version);
+    sprintf(log_msg, "%s------>Timestamp: %d\n", log_msg, block.header.current_time);
+    sprintf(log_msg, "%s------>Merkle Root: %d\n", log_msg, block.header.merkle_root);
+    sprintf(log_msg, "%s------>Mining Difficulty: %d\n", log_msg, block.header.nbits);
+    sprintf(log_msg, "%s------>nonce: %d\n\n", log_msg, block.header.nonce);
+
+    c_core_log.send(log_msg, sizeof(log_msg));
   }
 
   void log_transaction(Transaction tx)
   {
-/*
     char log_msg[MAX_CORE_LOG_MSG_SIZE];
 
-    sprintf(log_msg, "\n\nTransaction Added to Pool:\n");
-    sprintf(log_msg, "%sTXID: %d\n", log_msg, tx.txid);
-    sprintf(log_msg, "%sInput ID: %d\n", log_msg, tx.input.txid);
-    sprintf(log_msg, "%sOutput ID: %d\n", log_msg, tx.output.txid);
-    sprintf(log_msg, "%sAddress: %d\n", log_msg, tx.address);
-    sprintf(log_msg, "%sAmount: %d\n", log_msg, tx.amount);
+    sprintf(log_msg, "Transaction Added to Pool:\n");
+    sprintf(log_msg, "%s-->TXID: %d\n", log_msg, tx.txid);
+    sprintf(log_msg, "%s-->Input ID: %d\n", log_msg, tx.input.txid);
+    sprintf(log_msg, "%s-->Output ID: %d\n", log_msg, tx.output.txid);
+    sprintf(log_msg, "%s-->Address: %d\n", log_msg, tx.address);
+    sprintf(log_msg, "%s-->Amount: %d\n\n", log_msg, tx.amount);
 
     c_core_log.send(log_msg, sizeof(log_msg));
-*/
   }
 
   void main (void)
@@ -220,8 +249,8 @@ behavior RPCServer (
           memcpy(&(bc_out.entries[bc_in.head_block]),
             &(packet.data.block), sizeof(Block));
           block_mutex.release();
-          log_block(packet.data.block);
           log_basic_string("New Block Submitted to the P2P Network");
+          log_block(packet.data.block);
           break;
         }
         case GET_TX_OUT_SET_INFO:
@@ -289,6 +318,7 @@ behavior RPCServer (
             }
             pool_mutex.release();
             block_mutex.release();
+            log_basic_string("Wallet is Sending a Transaction to the P2P Network");
             log_transaction(local_transaction_copy);
           }
           else
@@ -296,7 +326,6 @@ behavior RPCServer (
             fprintf(stderr, "Couldn't send signed transaction\n");
             exit (1);
           }
-          log_basic_string("Wallet is Sending a Transaction to the P2P Network");
           break;
         }
         case DEV_SEND_TRANSACTION:
@@ -312,8 +341,8 @@ behavior RPCServer (
           }
           pool_mutex.release();
           block_mutex.release();
-          log_transaction(packet.data.transaction);
           log_basic_string("Receiving a New Transaction from the P2P Network");
+          log_transaction(packet.data.transaction);
           break;
         }
         default:

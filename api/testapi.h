@@ -8,8 +8,8 @@
 #ifndef _TESTAPI_H_
 #define _TESTAPI_H_
 
-#define MAX_WALLET_LOG_MSG_SIZE   256
-#define MAX_CORE_LOG_MSG_SIZE     512
+#define MAX_WALLET_LOG_MSG_SIZE    256
+#define MAX_CORE_LOG_MSG_SIZE     1024
 
 typedef enum
 {

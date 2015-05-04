@@ -1,0 +1,106 @@
+Sending Block Template to SW Miner
+
+New Block Submitted to the P2P Network
+
+Block Added to local Blockchain:
+-->Hash: d452771b4a586a362468ad5f35c4dd113db459ce3ddff9fce02c7bca42bc7bd1
+-->Num Transactions: 2
+-->Transaction:
+------>TXID: 1
+------>Input ID: 0
+------>Output ID: 1
+------>Address: 1111111
+------>Amount: 1000
+-->Transaction:
+------>TXID: 2
+------>Input ID: 1
+------>Output ID: 2
+------>Address: 2222222
+------>Amount: 500
+-->Header:
+------>Version: 2
+------>Previous Hash: 5d0827599ed3d52d54a8e953cb58c6c32e2b4cf2327a7961e66e8c308f9fce
+------>Version: 2
+------>Timestamp: 1430777559
+------>Merkle Root: 336465782
+------>Mining Difficulty: 16777215
+------>nonce: 0
+
+New Block Submitted to the P2P Network
+
+Block Added to local Blockchain:
+-->Hash: 878abb15edc3a6a71bddf588686898e4741ac97f3571e6059596cb96344
+-->Num Transactions: 3
+-->Transaction:
+------>TXID: 3
+------>Input ID: 2
+------>Output ID: 3
+------>Address: 3333333
+------>Amount: 300
+-->Transaction:
+------>TXID: 4
+------>Input ID: 3
+------>Output ID: 4
+------>Address: 1111111
+------>Amount: 300
+-->Transaction:
+------>TXID: 5
+------>Input ID: 4
+------>Output ID: 5
+------>Address: 2222222
+------>Amount: 100
+-->Header:
+------>Version: 2
+------>Previous Hash: b1ecd62e633ca47a2093344cec96d6a06f93c9dbcf8951792cd6bd5e1c15542
+------>Version: 2
+------>Timestamp: 1430777559
+------>Merkle Root: 1474612399
+------>Mining Difficulty: 16777215
+------>nonce: 0
+
+Sending Block Template to SW Miner
+
+Receiving a New Transaction from the P2P Network
+
+Transaction Added to Pool:
+-->TXID: 6
+-->Input ID: 5
+-->Output ID: 6
+-->Address: 3333333
+-->Amount: 50
+
+Receiving a New Transaction from the P2P Network
+
+Transaction Added to Pool:
+-->TXID: 7
+-->Input ID: 6
+-->Output ID: 7
+-->Address: 1111111
+-->Amount: 50
+
+Receiving a New Transaction from the P2P Network
+
+Transaction Added to Pool:
+-->TXID: 8
+-->Input ID: 7
+-->Output ID: 8
+-->Address: 3333333
+-->Amount: 50
+
+Providing UTXO Set Data to Wallet
+
+Creating Raw Transaction for Wallet
+
+Signing Raw Transaction for Wallet
+
+Wallet is Sending a Transaction to the P2P Network
+
+Transaction Added to Pool:
+-->TXID: 1430777559
+-->Input ID: 5
+-->Output ID: 1430777559
+-->Address: 992277052
+-->Amount: 100
+
+Providing UTXO Set Data to Wallet
+
