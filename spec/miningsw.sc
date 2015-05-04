@@ -228,6 +228,7 @@ behavior Controller(i_sender c_request, i_receiver c_response,
         else
         {
           block_count++;
+          printf("SW Miner: Submitted block to P2P Network\n");
         }
       }
       else
