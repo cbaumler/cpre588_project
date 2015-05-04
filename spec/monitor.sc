@@ -22,7 +22,7 @@ behavior PerformanceMonitor (i_receiver c_perf)
     int idx;
     int hashrate, energy_efficiency, cost_efficiency;
 
-    while (true) 
+    while (true)
     {
       // Receive the performance data
       c_perf.receive(&perf_data, sizeof(perf_data));
@@ -38,10 +38,10 @@ behavior PerformanceMonitor (i_receiver c_perf)
         perf_data.total_num_hashes = 180000000;
         perf_data.total_cost = 299;
       }
-  
+
       // Write the performance data to a log
       fout = fopen("../log/performance.log", "w");
-  
+
       // Write code performance data
       fprintf(fout, "\nCode Performance Breakdown:\n\n");
       for (idx = 0; idx < NUM_CODE_BLOCKS; idx++)
@@ -50,7 +50,7 @@ behavior PerformanceMonitor (i_receiver c_perf)
           perf_data.codeblocks[idx].time,
           perf_data.codeblocks[idx].power);
       }
-  
+
       // Write block performance data
       fprintf(fout, "\nBlock Performance Breakdown:\n\n");
       fprintf(fout, "Total Blocks Mined: %d\n\n", perf_data.num_mined_blocks);
@@ -60,12 +60,12 @@ behavior PerformanceMonitor (i_receiver c_perf)
           perf_data.mined_blocks[idx].time,
           perf_data.mined_blocks[idx].power);
       }
-  
+
       // Write overall performance data
       hashrate = perf_data.total_num_hashes / perf_data.total_sim_time;
       energy_efficiency = hashrate / perf_data.total_power;
       cost_efficiency = hashrate / perf_data.total_cost;
-  
+
       fprintf(fout, "\nOverall Performance:\n\n");
       fprintf(fout, "Total Power Usage : %10d Watts\n", perf_data.total_power);
       fprintf(fout, "Total Cost        : %10d Dollars\n", perf_data.total_cost);
@@ -85,16 +85,28 @@ behavior CoreMonitor (i_receiver c_transaction_out)
   }
 };
 
-behavior Monitor (i_receiver c_transaction_out, i_receiver c_performance)
+behavior WalletMonitor (out event e_log_wallet, i_receiver c_wallet_log)
+{
+
+  void main (void)
+  {
+
+  }
+};
+
+behavior Monitor (i_receiver c_transaction_out, i_receiver c_performance,
+  out event e_log_wallet, i_receiver c_wallet_log)
 {
   PerformanceMonitor perf_mon(c_performance);
   CoreMonitor core_mon(c_transaction_out);
+  WalletMonitor wallet_mon(e_log_wallet, c_wallet_log);
 
   void main (void)
   {
     par {
       perf_mon.main();
       core_mon.main();
+      wallet_mon.main();
     }
 
   }

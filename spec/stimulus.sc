@@ -20,7 +20,8 @@ import "rpcclient";
 typedef enum
 {
   CREATE_BLOCK,
-  CREATE_TRANSACTION
+  CREATE_TRANSACTION,
+  SPEND_BITCOIN
 
 } EventType;
 
@@ -34,7 +35,7 @@ typedef struct
 } Event;
 
 behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
-  i_sender c_profile, out unsigned int mining_difficulty_output)
+  i_sender c_profile, i_sender c_spend, out unsigned int mining_difficulty_output)
 {
   RPCClient client(c_p2p_request, c_p2p_response);
 
@@ -58,6 +59,7 @@ behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
     char line[FGETS_MAX];
     char temp[FGETS_MAX];
     char event_str[64];
+    bool spend = true;
 
     p_hwconfig = (int*)(&(hwconfig.clock));
 
@@ -192,6 +194,16 @@ behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
             event_write_index++;
           }
         }
+        else if (strcmp(event_str, "SPEND_BITCOIN") == 0)
+        {
+          for (idx = 0; idx < num_tx; idx++)
+          {
+            // Create an event to spend Bitcoin
+            events[event_write_index].type = SPEND_BITCOIN;
+            events[event_write_index].timestamp = timestamp;
+            event_write_index++;
+          }
+        }
         else
         {
           fprintf(stderr, "Invalid action in events.cfg: %s\n", event_str);
@@ -216,7 +228,7 @@ behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
 
       if (events[idx].type == CREATE_BLOCK)
       {
-        printf("Injecting block from P2P Network\n");
+        printf("Stimulus: Injecting block from P2P Network\n");
         err = client.submitblock(&(events[idx].block));
         if (err == -1)
         {
@@ -226,13 +238,18 @@ behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
       }
       else if (events[idx].type == CREATE_TRANSACTION)
       {
-        printf("Injecting transaction from P2P Network\n");
+        printf("Stimulus: Injecting transaction from P2P Network\n");
         err = client.dev_sendrawtransaction(events[idx].transaction);
         if (err == -1)
         {
           fprintf(stderr, "stimulus: dev_sendrawtransaction failed\n");
           exit (1);
         }
+      }
+      else if (events[idx]. type == SPEND_BITCOIN)
+      {
+        printf("Stimulus: Spending Bitcoin\n");
+        c_spend.send(&spend, sizeof(spend));
       }
     }
 

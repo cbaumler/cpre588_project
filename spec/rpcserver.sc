@@ -58,6 +58,11 @@ behavior RPCServer (
     int value;
     bool spent;
 
+    // Initialize the packet data
+    packet->data.txoutsetinfo.transactions = 0;
+    packet->data.txoutsetinfo.txouts = 0;
+    packet->data.txoutsetinfo.total_amount = 0;
+
     block_mutex.acquire();
 
     packet->data.txoutsetinfo.height = bc_in.head_block;
@@ -122,24 +127,28 @@ behavior RPCServer (
     {
       for (idx2 = 0; idx2 < bc_in.entries[idx1].n_transactions; idx2++)
       {
-        if (bc_in.entries[idx1].transactions[idx2].txid == packet->data.txout.txid)
+        if (bc_in.entries[idx1].transactions[idx2].txid == packet->data.txout.txout_id)
         {
           // Copy the transaction output data
           memcpy(packet->data.txout.best_block, bc_in.entries[idx1].hash, NUM_HASH_BYTES);
           packet->data.txout.value = bc_in.entries[idx1].transactions[idx2].amount;
           packet->data.txout.address = bc_in.entries[idx1].transactions[idx2].address;
+          packet->data.txout.txin_id = bc_in.entries[idx1].transactions[idx2].input.txid;
           found_txout = true;
           break;
         }
       }
-      break;
+      if (found_txout)
+      {
+        break;
+      }
     }
 
     block_mutex.release();
 
     if (!found_txout)
     {
-      packet->data.txout.txid = -1;
+      packet->data.txout.txout_id = -1;
     }
   }
 

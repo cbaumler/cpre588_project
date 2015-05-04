@@ -72,18 +72,20 @@ behavior Controller(i_sender c_request, i_receiver c_response,
   int compute_merkle_root (BlockTemplate btemplate)
   {
     int txids[MAX_TRANSACTIONS];
-    int num_tx_left, num_tx_pairs, idx, idx1, idx2;
-    int merkle_root;
+    int num_tx_left, num_tx_pairs, idx1, idx2;
+    unsigned int idx;
+    int merkle_root = 0;
 
-    // Compute the merkle root by hashing together txids as follows:
-    //
-    //      ABCDEEEE .......Merkle root
-    //        /        \
-    //     ABCD        EEEE
-    //    /    \      /
-    //   AB    CD    EE .......E is paired with itself
-    //  /  \  /  \  /
-    //  A  B  C  D  E .........Transactions
+    /* Compute the merkle root by hashing together txids as follows:
+     *
+     *      ABCDEEEE .......Merkle root
+     *        /        \
+     *     ABCD        EEEE
+     *    /    \      /
+     *   AB    CD    EE .......E is paired with itself
+     *  /  \  /  \  /
+     *  A  B  C  D  E .........Transactions
+     */
 
     // Get the transaction IDs (txids) of all the transactions in the block
     for (idx = 0; idx < btemplate.num_transactions; idx++)
@@ -133,6 +135,7 @@ behavior Controller(i_sender c_request, i_receiver c_response,
         num_tx_pairs = num_tx_left / 2;
       }
     }
+    return merkle_root;
   }
 
   void send_header()
@@ -153,7 +156,6 @@ behavior Controller(i_sender c_request, i_receiver c_response,
     memcpy(block.header.prev_hash, btemplate.prev_hash, NUM_HASH_BYTES);
     block.header.current_time = (unsigned int)time(0);
     block.header.nbits = btemplate.bits;
-    printf("!!!mining difficulty = %d\n", block.header.nbits);
     block.header.merkle_root = compute_merkle_root(btemplate);
 
     block.n_transactions = btemplate.num_transactions;

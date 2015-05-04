@@ -88,8 +88,9 @@ typedef struct
 
   int value;         // The amount spent to this output. May be 0.
   int address;       // The address to which Bitcoins were sent
-  int txid;          // The transaction ID containing the output
+  int txout_id;      // The transaction ID containing the output
   int vout;          // The index of the output within the transaction
+  int txin_id;       // The transaction ID containing the input (CUSTOM)
 
 } TxOut;
 

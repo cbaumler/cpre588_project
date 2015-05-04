@@ -175,14 +175,14 @@ behavior RPCClient (i_sender c_request, i_receiver c_response) implements IClien
 
     // Create a network packet with header and payload
     packet.type = GET_TX_OUT;
-    packet.data.txout.txid = txid;
+    packet.data.txout.txout_id = txid;
     packet.data.txout.vout = vout;
 
     // Transmit the packet and wait for the response
     c_request.send(&packet, sizeof(packet));
     c_response.receive(&packet, sizeof(packet));
 
-    if ((packet.type == GET_TX_OUT) && (packet.data.txout.txid != -1))
+    if ((packet.type == GET_TX_OUT) && (packet.data.txout.txout_id != -1))
     {
       memcpy(p_txout, &(packet.data.txout), sizeof(TxOut));
       result = 1;
