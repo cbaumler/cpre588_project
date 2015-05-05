@@ -230,11 +230,14 @@ behavior Controller(i_sender c_request, i_receiver c_response,
           block_count++;
           printf("SW Miner: Submitted block to P2P Network\n");
         }
+
+        // Send a new block header to the miner thread
+        send_header();
       }
       else
       {
         // Sleep for a while
-        waitfor(50);
+        waitfor(2000);
       }
     }
   }
