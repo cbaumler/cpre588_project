@@ -30,6 +30,7 @@ behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
     FILE *ftransactions;
     FILE *fevents;
     char name[MAX_NAME_LENGTH];
+    char pe_type[MAX_NAME_LENGTH];    
     int value, idx, err;
     HWConfig hwconfig;
     int *p_hwconfig;
@@ -54,15 +55,21 @@ behavior Stimulus(i_sender c_p2p_request, i_receiver c_p2p_response,
     if (fhwconfig != NULL)
     {
       printf("Hardware Configuration:\n");
+      if (fscanf(fhwconfig, "%s", &pe_type) == EOF)
+        {
+          fprintf(stderr, "No PE Type name in hardware.cfg\n");
+          exit(1);
+        }
+      printf("%s\n", pe_type);
       for (idx = 0; idx < NUM_HW_PARAMETERS; idx++)
       {
-        if (fscanf(fhwconfig, "%s %d", &name, &value) == EOF)
+        if (fscanf(fhwconfig, "%s %ul", &name, &value) == EOF)
         {
           fprintf(stderr, "Too few parameters in hardware.cfg\n");
           exit(1);
         }
         p_hwconfig[idx] = value;
-        printf("%s=%d\n", name, value);
+        printf("%s=%ul\n", name, value);
       }
     }
     else

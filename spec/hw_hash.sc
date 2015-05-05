@@ -1,11 +1,49 @@
-//-------------------------------------------------------------------------
-// Behavior: HW_Hash
-// Author: Team 4
-// Date: May 6, 2015
-// Description:
-// Inputs:
-// Outputs:
-//-------------------------------------------------------------------------
+/****************************************************************************
+*  Title: hw_hash.sc
+*  Author: Team 4
+*  Date: 05/06/2015
+*  Description: Bitcoin mining hardware behavior.  This encapsulates a 
+*    C-language SHA-256 algorithm in SpecC simulation code to represent
+*    a complete Bitcoin transaction verification "component" (typically
+*    an ASIC device).  Almost all measurement instrumentation used across
+*    the project is found here, measuring time and power.
+*
+*    The SHA-256 C-language algorithm is derived from an open source
+*    project by Kolivas and Gay:
+*
+* FIPS 180-2 SHA-224/256/384/512 implementation
+* Last update: 02/02/2007
+* Issue date:  04/30/2005
+*
+* Copyright (C) 2013, Con Kolivas <kernel@kolivas.org>
+* Copyright (C) 2005, 2007 Olivier Gay <olivier.gay@a3.epfl.ch>
+* All rights reserved.
+*
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions
+* are met:
+* 1. Redistributions of source code must retain the above copyright
+*    notice, this list of conditions and the following disclaimer.
+* 2. Redistributions in binary form must reproduce the above copyright
+*    notice, this list of conditions and the following disclaimer in the
+*    documentation and/or other materials provided with the distribution.
+* 3. Neither the name of the project nor the names of its contributors
+*    may be used to endorse or promote products derived from this software
+*    without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY THE PROJECT AND CONTRIBUTORS ``AS IS'' AND
+* ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+* ARE DISCLAIMED.  IN NO EVENT SHALL THE PROJECT OR CONTRIBUTORS BE LIABLE
+* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+* DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+* OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+* HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+* LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+* OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+* SUCH DAMAGE.
+*
+****************************************************************************/
 
 #include <sim.sh>
 #include <stdlib.h>
@@ -13,40 +51,17 @@
 #include <time.h>
 
 #include "../api/coreapi.h"
+#include "../config/hwconfig.h"
 
-import "c_double_handshake";	// import the standard channel
+import "c_double_handshake";
 
-
-//------------------------------------------------------------------------
-// Instrumentation Constants
-//   (to be replaced with file-based data eventually, to simplify swithing
-//    between different PE types)
-//
-#define t_clock                 5
-#define t_pipeline_depth        4
-#define t_parallel_paths        4
-#define t_mread                 1
-#define t_mwrite                1
-#define t_bif                   30
-#define t_call                  10
-#define t_isum                  5
-#define t_imul                  15
-#define t_idiv                  20
-#define t_shft                  2
-#define t_rot                   2
-#define t_band                  5
-#define t_bor                   5
-#define t_bnot                  5
-#define t_bxor                  5
-#define t_comp                  3
-#define t_timeout               10
-#define t_pwr                   0
-
+// The "work" construct is used to bridge differences between the 
+// way Bitcoin transaction "blocks" are delivered to this package
+// with the mechanism used by the open source SHA-256 algorithm.
 typedef struct {
-	unsigned char midstate[256]; // Warning: Picked an arbitrary size
-  unsigned char data[256];
-	unsigned char hash[256];
-	unsigned char target[256];
+	unsigned char root[32];
+  unsigned char data[32];
+	unsigned char hash[32];
 } Work;
 
 
@@ -55,6 +70,66 @@ typedef struct {
 	bool status;
 } Return_Nonce;
 
+HWConfig hwconfig;
+  
+unsigned long t_clock;
+unsigned long t_mread;
+unsigned long t_mwrite;
+unsigned long t_call;
+unsigned long t_isum;
+unsigned long t_imul;
+unsigned long t_idiv;
+unsigned long t_shft;
+unsigned long t_rot;
+unsigned long t_band;
+unsigned long t_bor;
+unsigned long t_bnot;
+unsigned long t_bxor;
+unsigned long t_comp;
+unsigned long t_timeout;
+unsigned long p_pwr_static;
+unsigned long p_pwr_dynamic;
+
+double t_period = 1.0;
+
+BlockHeader g_blk_hdr;
+Return_Nonce g_nonce;
+PerformanceData g_stats;
+  
+
+void power_meter_cycles(unsigned long power, long cycles) {
+	g_stats.cum_energy += (double)cycles * t_period * (double)power;
+}
+
+void power_meter_seconds(unsigned long power, double seconds) {
+	g_stats.cum_energy += seconds * (double)power;
+}
+
+
+void configure_pe() {
+	t_clock       = hwconfig.clock;
+  t_mread       = hwconfig.mread;
+  t_mwrite      = hwconfig.mwrite;
+  t_call        = hwconfig.call;
+  t_isum        = hwconfig.isum;
+  t_imul        = hwconfig.imul;
+  t_idiv        = hwconfig.idiv;
+  t_shft        = hwconfig.shft;
+  t_rot         = hwconfig.rot;
+  t_band        = hwconfig.band;
+  t_bor         = hwconfig.bor;
+  t_bnot        = hwconfig.bnot;
+  t_bxor        = hwconfig.bxor;
+  t_comp        = hwconfig.comp;
+  t_timeout     = hwconfig.timeout;
+  p_pwr_static  = hwconfig.pwr_static;
+  p_pwr_dynamic = hwconfig.pwr_dynamic;
+  
+  if (t_clock > 0) {
+		t_period = 1.0 / (double)t_clock;
+	}
+	
+} // end configure_pe()
 
 
 behavior Process_Block_Header(i_receiver  c_blk_hdr,
@@ -62,13 +137,10 @@ behavior Process_Block_Header(i_receiver  c_blk_hdr,
                               i_sender    c_perf,
                               event       e_tstart,
                               event       e_tstop) {
+ 
+	long i_cycles;
 
-  // Behavior-global data
-	BlockHeader g_blk_hdr;
-	Return_Nonce g_nonce;
-	PerformanceData g_stats;
-
-
+  
 	//***********************************//
 	//** INSTRUMENTED CODE STARTS HERE **//
 	//***********************************//
@@ -76,7 +148,6 @@ behavior Process_Block_Header(i_receiver  c_blk_hdr,
 
 	//-----------------------------------------------------------------------
 	// Constant: Process_Block_Header.sha256_init_state
-	// Description:
 	//-----------------------------------------------------------------------
   const unsigned int sha256_init_state[8] = {
   	0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
@@ -86,80 +157,96 @@ behavior Process_Block_Header(i_receiver  c_blk_hdr,
 
 	//-----------------------------------------------------------------------
 	// Function: General hashing utilities
-	// Description:
-	// Inputs:
-	// Outputs:
 	//-----------------------------------------------------------------------
 
   typedef unsigned int u32;
   typedef unsigned char u8;
 
   u32 ror32(u32 word, unsigned int shift) {
-  	// Instrumentation block
-  	waitfor(t_shft*(32-shift+1) + t_bor);
+  	// Start Instrumentation
+  	i_cycles = t_shft*(32-shift+1) + t_bor;
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation
   	return (word >> shift) | (word << (32 - shift));
   }
 
 
   u32 Ch(u32 x, u32 y, u32 z) {
-  	// Instrumentation block
-  	waitfor(t_bxor*2 + t_band);
+  	// Start Instrumentation
+  	i_cycles = t_bxor*2 + t_band;
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation
   	return z ^ (x & (y ^ z));
   }
 
 
   u32 Maj(u32 x, u32 y, u32 z) {
-  	// Instrumentation block
-  	waitfor(t_band*2 + t_bor*2);
+  	// Start Instrumentation
+  	i_cycles = t_band*2 + t_bor*2;
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation
   	return (x & y) | (z & (x | y));
   }
 
-  // Instrumentation:	waitfor(t_rot*37 + t_bxor*2);
+  // Instrumentation:	i_cycles += t_call*3 + t_bxor*2  // e0
   #define e0(x) (ror32(x, 2) ^ ror32(x,13) ^ ror32(x,22))
 
-  // Instrumentation:	waitfor(t_rot*42 + t_bxor*2);
+  // Instrumentation:	i_cycles += t_call*3 + t_bxor*2  // e1
   #define e1(x) (ror32(x, 6) ^ ror32(x,11) ^ ror32(x,25))
 
-  // Instrumentation:	waitfor(t_rot*25 + t_shft*3 + t_bxor*2);
+  // Instrumentation:	i_cycles += t_call*3 + t_shft*3 + t_bxor*2  // s0
   #define s0(x) (ror32(x, 7) ^ ror32(x,18) ^ (x >> 3))
 
-  // Instrumentation:	waitfor(t_rot*36 + t_shft*10 + t_bxor*2);
+  // Instrumentation:	i_cycles += t_call*3 + t_shft*10 + t_bxor*2  // s1
   #define s1(x) (ror32(x,17) ^ ror32(x,19) ^ (x >> 10))
 
-  // Instrumentation:	waitfor(t_shft*16 + t_band +t_bor*2);
+  // Instrumentation:	i_cycles += t_shft*16 + t_band +t_bor*2  // bswap_16
   #define	bswap_16(value)  \
  	  ((((value) & 0xff) << 8) | ((value) >> 8))
 
- 	// Instrumentation:	waitfor(t_band + t_shft*32);
+ 	// Instrumentation:	i_cycles += t_call*2 + t_band + t_shft*32  // bswap_32
   #define	bswap_32(value)	\
    	(((unsigned int)bswap_16((unsigned short)((value) & 0xffff)) << 16) | \
    	(unsigned int)bswap_16((unsigned short)((value) >> 16)))
 
 
   void LOAD_OP(int I, u32 *W, const u8 *input) {
-  	// Instrumentation block
-  	// waitfor(t_mread + t_mwrite);  	  *** Skip memory read/write ops for now
+  	// Start Instrumentation
+  	i_cycles = t_mread + t_mwrite;
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation
   	W[I] = ( ((u32*)(input))[I] );
   }
 
 
   void BLEND_OP(int I, u32 *W) {
-  	// Instrumentation block
-  	waitfor(t_isum*7);
+  	// Start Instrumentation 	
+  	i_cycles  = t_isum*7 + t_mread*4 + t_mwrite;
+  	i_cycles += t_call*3 + t_shft*3 + t_bxor*2;   // s0 macro
+  	i_cycles += t_call*3 + t_shft*10 + t_bxor*2;  // s1 macro
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation
   	W[I] = s1(W[I-2]) + W[I-7] + s0(W[I-15]) + W[I-16];
   }
 
 
   unsigned int swab32(unsigned int v) {
+  	// Start Instrumentation
+  	i_cycles = t_call;
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation  	
   	return bswap_32(v);
   }
 
 
 	//-----------------------------------------------------------------------
 	// Function: Process_Block_Header.sha256_transform
-	// Description:
-	// Inputs:
-	// Outputs:
 	//-----------------------------------------------------------------------
   void sha256_transform(u32 *state,
                         const u8 *input) {
@@ -169,25 +256,42 @@ behavior Process_Block_Header(i_receiver  c_blk_hdr,
   	int i;
 
   	/* load the input */
-  	// Instrumentation block
-  	waitfor(t_comp*16 + t_isum*16);
+  	// Start Instrumentation
+  	i_cycles = t_call*16 + t_comp*16 + t_isum*16;
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation
   	for (i = 0; i < 16; i++)
   		LOAD_OP(i, W, input);
 
   	/* now blend */
-  	// Instrumentation block
-  	waitfor(t_comp*48 + t_isum*48);
+  	// Start Instrumentation
+  	i_cycles = t_call * 48 + t_comp*48 + t_isum*48;
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation
   	for (i = 16; i < 64; i++)
   		BLEND_OP(i, W);
 
   	/* load the state into our registers */
+  	// Start Instrumentation
+  	i_cycles = t_mread*8 + t_mwrite*8;
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation  	
   	a=state[0];  b=state[1];  c=state[2];  d=state[3];
   	e=state[4];  f=state[5];  g=state[6];  h=state[7];
 
   	/* now iterate */
-  	// Instrumentation block(s)
-  	waitfor((t_isum*4)*64);   // For statements of the form "t1 = h + e1(e) + Ch(e,f,g) + 0x428a2f98 + W[ 0];"
-  	waitfor((t_isum*3)*64);   // For statements of the form "t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;"
+  	
+  	// Start Instrumentation
+  	i_cycles  = (t_isum*4)*64 + t_call + t_mread; // For statements of the form "t1 = ..."
+  	i_cycles += (t_isum*3)*64 + t_call + t_mread; // For statements of the form "t2 = ..."
+  	i_cycles += (t_call*3 + t_bxor*2)*64;         // macro e0
+  	i_cycles += (t_call*3 + t_bxor*2)*64;         // macro e1
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation
   	t1 = h + e1(e) + Ch(e,f,g) + 0x428a2f98 + W[ 0];
   	t2 = e0(a) + Maj(a,b,c);    d+=t1;    h=t1+t2;
   	t1 = g + e1(d) + Ch(d,e,f) + 0x71374491 + W[ 1];
@@ -324,7 +428,11 @@ behavior Process_Block_Header(i_receiver  c_blk_hdr,
   	t1 = a + e1(f) + Ch(f,g,h) + 0xc67178f2 + W[63];
   	t2 = e0(b) + Maj(b,c,d);    e+=t1;    a=t1+t2;
 
-  	// Instrumentation block(s)
+  	// Start Instrumentation
+  	i_cycles = t_isum*8 + t_mread*8 + t_mwrite*8;
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation
   	waitfor(t_isum*8);
   	state[0] += a; state[1] += b; state[2] += c; state[3] += d;
   	state[4] += e; state[5] += f; state[6] += g; state[7] += h;
@@ -335,18 +443,25 @@ behavior Process_Block_Header(i_receiver  c_blk_hdr,
 
 	//-----------------------------------------------------------------------
 	// Function: Process_Block_Header.runhash
-	// Description:
-	// Inputs:
-	// Outputs:
 	//-----------------------------------------------------------------------
   void runhash(void *state,
                const void *input,
                const void *init) {
 
     // Initialize the state array (32 bytes) from the init parameter
+  	// Start Instrumentation
+  	i_cycles = t_mread*32 + t_mwrite*32;
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation    
   	memcpy(state, init, 32);
 
   	// Run the hash algorithm
+  	// Start Instrumentation
+  	i_cycles = t_call;
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation  	
   	sha256_transform((u32 *)state, (u8 *)input);
 
   } // end Process_Block_Header.runhash()
@@ -355,18 +470,25 @@ behavior Process_Block_Header(i_receiver  c_blk_hdr,
 
 	//-----------------------------------------------------------------------
 	// Function: Process_Block_Header.swap256
-	// Description:
-	// Inputs:
-	// Outputs:
 	//-----------------------------------------------------------------------
   void swap256(void *dest_p, const void *src_p) {
 
 		unsigned int *dest;
 		unsigned int *src;
 
+  	// Start Instrumentation
+  	i_cycles = t_mread*2 + t_mwrite*2;
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation
 		dest = (unsigned int *)dest_p;
 		src = (unsigned int *)src_p;
 
+  	// Start Instrumentation
+  	i_cycles = t_mread*8 + t_mwrite*8;
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation
   	dest[0] = src[7];
   	dest[1] = src[6];
   	dest[2] = src[5];
@@ -398,23 +520,45 @@ behavior Process_Block_Header(i_receiver  c_blk_hdr,
 		bool rc = true;
 		unsigned int h32tmp, t32tmp;
 
+  	// Start Instrumentation
+  	i_cycles = t_mread*2 + t_mwrite*2;
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation
 		hash32 = (unsigned int *) hash_swap;
 		target32 = (unsigned int *) target_swap;
 
+  	// Start Instrumentation
+  	i_cycles = t_call*2;
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation
   	swap256(hash_swap, hash);
   	swap256(target_swap, target);
 
-  	// Instrumentation block(s)
-  	waitfor(t_comp*8 + t_isum*8);
+  	// Start Instrumentation
+  	i_cycles = t_comp*8 + t_isum*8;
+  	waitfor(i_cycles);
+  	power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	// End Instrumentation
   	for (i = 0; i < 32/4; i++) {
 
+  	  // Start Instrumentation
+  	  i_cycles = t_mread*2 + t_mwrite*2 + t_call;
+  	  waitfor(i_cycles);
+  	  power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	  // End Instrumentation
   		h32tmp = swab32(hash32[i]);
   		t32tmp = target32[i];
 
-  		target32[i] = swab32(target32[i]);	/* for printing */
+      // DJK: I don't think this is needed?
+  		//target32[i] = swab32(target32[i]);	/* for printing */
 
-  	  // Instrumentation block(s)
-  	  waitfor(t_comp);
+  	  // Start Instrumentation
+  	  i_cycles = t_comp;
+  	  waitfor(i_cycles);
+  	  power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	  // End Instrumentation
   		if (h32tmp >= t32tmp) {
   			rc = false;
   			break;
@@ -435,51 +579,11 @@ behavior Process_Block_Header(i_receiver  c_blk_hdr,
 	}
 
 
-	void reset_stats(void) {
-
-    // Reset time statistics
-    g_stats.time_total     = 0;
-    g_stats.time_blk_start = 0;
-    g_stats.time_blk_stop  = 0;
-    g_stats.time_blk       = 0;
-
-    // Reset hash count statistics
-    g_stats.hash_total = 0;
-    g_stats.hash_blk   = 0;
-
-    // Reset power statistics
-    g_stats.power_total = 0;
-    g_stats.power_blk   = 0;
-
-	} // end reset_stats()
-
-
-	void update_stats(void) {
-
-    // Update time statistics
-    g_stats.time_total     = now();
-    g_stats.time_blk_start = 0;
-    g_stats.time_blk_stop  = 0;
-    g_stats.time_blk       = 0;
-
-    // Update hash count statistics
-    g_stats.hash_total++;
-    g_stats.hash_blk++;
-
-    // Update power statistics
-    g_stats.power_total++;
-    g_stats.power_blk++;
-
-	} // end update_stats()
-
 
 	//-----------------------------------------------------------------------
 	// Function: Process_Block_Header.scanhash
-	// Description:
-	// Inputs:
-	// Outputs:
 	//-----------------------------------------------------------------------
-  bool scanhash(unsigned char *midstate,
+  bool scanhash(unsigned char *root,
                 unsigned char *data,
   	            unsigned char *hash,
   	            unsigned char *target,
@@ -490,34 +594,56 @@ behavior Process_Block_Header(i_receiver  c_blk_hdr,
   	unsigned int *nonce;
   	unsigned int  n        = 0;
   	unsigned long stat_ctr = 0;
+    unsigned char hash1[32];  	
 
 		hash32   = (unsigned int *) hash;
 		nonce    = (unsigned int *)(data + 12);
 
   	while (true) {
 
-  		unsigned char hash1[32];
-
-  	  // Instrumentation block(s)
-  	  waitfor(t_isum*2); // Covers n++ and stat_ctr++
+  	  // Start Instrumentation
+  	  i_cycles = t_isum + t_mwrite;
+  	  waitfor(i_cycles);
+  	  power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	  // End Instrumentation
   		n++;
   		*nonce = n;
 
-  		runhash(hash1, data, midstate);
+  	  // Start Instrumentation
+  	  i_cycles = t_call*2;
+  	  waitfor(i_cycles);
+  	  power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	  // End Instrumentation
+  		runhash(hash1, data, root);
   		runhash(hash, hash1, sha256_init_state);
 
+  	  // Start Instrumentation
+  	  i_cycles = t_isum + t_call;
+  	  waitfor(i_cycles);
+  	  power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	  // End Instrumentation
   		stat_ctr++;
-
+  		
+  		if (stat_ctr % 10000 == 0) printf("hashing: nonce = %d\n", stat_ctr);
+  		
   		if (fulltest(hash, target)) {
+  			// Start Instrumentation
+  	    i_cycles = t_mwrite*2;
+  	    waitfor(i_cycles);
+  	    power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	    // End Instrumentation
   			*hashes_done = stat_ctr;
-  			printf("HW_Hash.scanhash(VALID):nonce = %d, count = %lu, sim time = %6s\n", n, stat_ctr, time2str(now()));
+  			printf("HW_Hash.scanhash(VALID):nonce = %d\n", n);
   			g_blk_hdr.nonce = n;
   			//exit(0);
   			return true;
   		}
   		else if (n >= max_nonce) {
-  	    // Instrumentation block(s)
-  	    waitfor(t_comp);
+  	    // Start Instrumentation
+  	    i_cycles = t_comp + t_mwrite;
+  	    waitfor(i_cycles);
+  	    power_meter_cycles(p_pwr_dynamic, i_cycles);
+  	    // End Instrumentation
   			*hashes_done = stat_ctr;
   			return false;
   		}
@@ -530,9 +656,6 @@ behavior Process_Block_Header(i_receiver  c_blk_hdr,
 
 	//-----------------------------------------------------------------------
 	// Function: Process_Block_Header.hash_it_to_pieces
-	// Description:
-	// Inputs:
-	// Outputs:
 	//-----------------------------------------------------------------------
   bool hash_it_to_pieces() {
 
@@ -540,50 +663,34 @@ behavior Process_Block_Header(i_receiver  c_blk_hdr,
     unsigned long hashes_done;
 	  unsigned int t_start, t_end, diff;
 	  bool rc;
-	  Work work;  // DJK: Not sure work is needed, except still don't know what
-	              //      the "midstate" value is supposed to be
+	  Work work;
     int i;
 
-    // temp target, set to a small value to allow hash to complete
-    // more quickly
-    unsigned char test_target[32] = {
+    // Set to a small value to allow hash to complete
+    // more quickly, for test purposes
+    unsigned char target[32] = {
       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
       0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00
     };
 
-// DJK: Randomize "work" for testing
-
-    for (i = 0; i < 256; i++) {
-    	work.midstate[i] = (unsigned char) (rand() % 256);
-    	work.data[i]     = (unsigned char) (rand() % 256);
-    	work.hash[i]     = (unsigned char) (rand() % 256);
+    // Build "work" structure for testing
+    for (i = 0; i < 32; i++) {
+    	work.root[i] = (unsigned char) (rand() % 256);  // Random for testing
+    	work.data[i] = g_blk_hdr.prev_hash[i];          // From SW_Miner
     }
-
 
     // Initialize hash attempt counter and record start time
 	  hashes_done = 0;
-	  t_start = (unsigned int)time(0); // Unix time
 
-    // TODO: None of the value of work are initialized to anything right now
-
-	  // Scan nonces for a proof-of-work hash
-    rc = scanhash(work.midstate,
-                  work.data + 64,
-			            work.hash,
-			            //work.target,
-			            test_target,   // temp data for testing
-				          max_nonce,
-				          &hashes_done);
-
-	  // record scanhash elapsed time
-	  t_end = (int)time(0);  // DJK: Time will be recorded in the statistics, using
-	                         // sim time; real time won't give us the data we need
-	  diff = t_end - t_start;
-
-	  // Compute a hash rate
-	  hashmeter(diff, hashes_done);
+	  // Scan nonces for a proof-of-work hash (returns true if valid)
+    rc = scanhash(work.root,      // In,  Merkle Root
+                  work.data,      // In,  Previous Block Hash
+			            work.hash,      // Out, Resulting Hash
+			            target,         // In,  Validation Threshold
+				          max_nonce,      // In,  Max Iterations (effectively)
+				          &hashes_done);  // Out, Number of Iterations
 
 	  // Report results
 	  return rc;
@@ -591,40 +698,81 @@ behavior Process_Block_Header(i_receiver  c_blk_hdr,
 	} // end Process_Block_Header.hash_it_to_pieces()
 
 
-
-
 	//**********************************//
 	//** INSTRUMENTED CODE STOPS HERE **//
 	//**********************************//
 
+  void init_stats() {
+    g_stats.cum_time      = 0.0;
+    g_stats.cum_idle_time = 0.0;
+    g_stats.cum_proc_time = 0.0;
+    g_stats.cum_blocks    = 0.0;
+    g_stats.cum_hashes    = 0.0;
+    g_stats.cum_energy    = 0.0;
+	  g_stats.mhash_per_j   = 0.0;
+    g_stats.mhash_per_s   = 0.0;  
+  } // end init_stats()
+
 
 	//-----------------------------------------------------------------------
 	// Function: Process_Block_Header.main
-	// Description:
-	// Inputs:
-	// Outputs:
 	//-----------------------------------------------------------------------
 	void main(void) {
-
+		
+    unsigned long long start_idling;
+    unsigned long long start_processing;
+	  double idle_time;
+	  double processing_time;		
+	  
+	  init_stats();	  
+	  start_idling = now();
+	  
 		while (true) {
 
-			reset_stats();
-
-      printf("HW_Hash:c_blk_hdr.receive()\n");
+      // Wait for a block header to process (idle time)
+      printf("HW_Hash:c_blk_hdr.receive()\n");      
       c_blk_hdr.receive(&g_blk_hdr, sizeof(g_blk_hdr));
-      printf("HW_Hash:blk_hdr received\n");
-
+      g_stats.cum_blocks++;
+      printf("HW_Hash:blk_hdr received\n");      
+      
+   	  // Start Instrumentation      
+      idle_time = (double)(now() - start_idling) * t_period;
+      g_stats.cum_idle_time += idle_time; 
+      g_stats.cum_time += idle_time;
+      power_meter_seconds(p_pwr_static, idle_time);
+      start_processing = now();
+  	  // End Instrumentation       
+      
       // Run the hash search function, using the watchdog timer to
-      // prevent the search from running endlessley
-      notify(e_tstart); // Start watchdog
+      // prevent the search from running endlessly      
+      notify(e_tstart); // Start watchdog      
       g_nonce.status = hash_it_to_pieces();
       notify(e_tstop);  // Stop watchdog
+      
+  	  // Start Instrumentation       
+      processing_time = (double)(now() - start_processing) * t_period;
+      g_stats.cum_proc_time += processing_time;      
+      g_stats.cum_time += processing_time;
+  	  // End Instrumentation       
+
+      g_stats.cum_hashes += (double)g_blk_hdr.nonce;
+      if (g_stats.cum_energy != 0.0) {
+        g_stats.mhash_per_j = 
+          ((double)g_stats.cum_hashes / g_stats.cum_energy) / 1000000.0;
+      }
+      if (g_stats.cum_time != 0.0) {
+        g_stats.mhash_per_s = 
+          ((double)g_stats.cum_hashes / g_stats.cum_time) / 1000000.0;
+      }      
+  	  // End Instrumentation            
 
       // Set the final nonce value into the return nonce structure
-      g_nonce.nonce  = g_blk_hdr.nonce;
+      g_nonce.nonce  = g_blk_hdr.nonce;       
 
       // Report hash results and performance statistics
       c_nonce.send(&g_nonce, sizeof(g_nonce));
+      start_idling = now();
+      g_stats.flag = 0;  // Valid perf block      
       c_perf.send(&g_stats, sizeof(g_stats));
 
 	  } // end loop
@@ -635,14 +783,18 @@ behavior Process_Block_Header(i_receiver  c_blk_hdr,
 
 
 
-behavior Event_Reset(int command) {
+behavior Event_Reset(int   command,
+                     event e_tstop) {
 	void main(void) {
+		notify(e_tstop);
 		command = 1;
 	}
 };
 
-behavior Event_Abort(int command) {
+behavior Event_Abort(int command,
+                     event e_tstop) {
 	void main(void) {
+		notify(e_tstop);
 		command = 2;
 	}
 };
@@ -656,8 +808,8 @@ behavior Event_Tout(int command) {
 behavior HW_Hash(i_receiver  c_blk_hdr,
 	               i_sender    c_nonce,
 	               i_sender    c_perf,
+	               i_receiver  c_pe_profile,
 	               event       e_abort,
-	               event       e_ready,
 	               event       e_reset,
 	               event       e_tout,
 	               event       e_tstart,
@@ -674,16 +826,18 @@ behavior HW_Hash(i_receiver  c_blk_hdr,
                                             e_tstart,
                                             e_tstop);
 
-  Event_Reset event_reset(command);
+  Event_Reset event_reset(command, e_tstop);
 
-  Event_Abort event_abort(command);
+  Event_Abort event_abort(command, e_tstop);
 
   Event_Tout event_tout(command);
 
   void main(void) {
     while (true) {
-    	printf("HW_Hash:wait(e_ready)\n");
-  	  wait(e_ready);
+    	printf("HW_Hash:c_pe_profile.receive()\n");
+  	  c_pe_profile.receive(&hwconfig, sizeof(hwconfig));
+  	  configure_pe();
+  	  printf("HW_Hash:pwr_static = %lu, pwr_dynamic = %lu\n", p_pwr_static, p_pwr_dynamic);
     	while (true) {
     		try             {process_block_header.main();}
     		trap (e_reset)  {event_reset.main();}
@@ -694,19 +848,17 @@ behavior HW_Hash(i_receiver  c_blk_hdr,
     		  printf("HW_Hash:Reset\n");
     			break;
     		}
-    		else if (command == 2) {
+    		else if (command == 2) {  			
     		  printf("HW_Hash:Abort\n");
 					c_nonce.send(&timeout_nonce, sizeof(timeout_nonce));
+					g_stats.flag = 1;  // Abort 
+					c_perf.send(&g_stats, sizeof(g_stats));     		  
     		}
     		else if (command == 3) {
     		  printf("HW_Hash:Timeout\n");
           c_nonce.send(&timeout_nonce, sizeof(timeout_nonce));
-          //c_perf.send(&g_stats, sizeof(g_stats));    // DJK: Still need to figure
-                                                       //      out how to send stats
-                                                       //      in this case (and abort);
-                                                       //      may need to pass these
-                                                       //      in and out of behaviors
-                                                       //      through port.
+          g_stats.flag = 2;  // Timeout
+          c_perf.send(&g_stats, sizeof(g_stats));
     		}
     	}
     }

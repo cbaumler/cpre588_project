@@ -237,7 +237,7 @@ behavior Controller(i_sender c_request, i_receiver c_response,
       else
       {
         // Sleep for a while
-        waitfor(2000);
+        waitfor(2000000);
       }
     }
   }

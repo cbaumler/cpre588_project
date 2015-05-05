@@ -7,40 +7,39 @@
 
 #define MAX_NAME_LENGTH    256
 
-#define NUM_HW_PARAMETERS   18
+#define NUM_HW_PARAMETERS   17
 
 // This struct defines the hardware input parameters.
 // Note that these must be of type int to be parsed correctly.
 typedef struct
 {
   // PE Performance
-  int clock;
+  unsigned long clock;
   
   // Memory Performance
-  int mread;
-  int mwrite;  
+  unsigned long mread;
+  unsigned long mwrite;  
 
   // Composite Operations
-  int bif;
-  int call;
+  unsigned long call;
 
   // SHA-256 Instruction Set
-  int isum;
-  int imul;
-  int idiv;
-  int shft;
-  int rot;
-  int band;
-  int bor;
-  int bnot;
-  int bxor;
-  int comp;
+  unsigned long isum;
+  unsigned long imul;
+  unsigned long idiv;
+  unsigned long shft;
+  unsigned long rot;
+  unsigned long band;
+  unsigned long bor;
+  unsigned long bnot;
+  unsigned long bxor;
+  unsigned long comp;
 
   // Power Consumption
-  int timeout;
+  unsigned long timeout;
   
   // Power Consumption
-  int pwr_static;
-  int pwr_dynamic;
+  unsigned long pwr_static;
+  unsigned long pwr_dynamic;
 
 } HWConfig;

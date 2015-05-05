@@ -1,3 +1,10 @@
+/****************************************************************************
+*  Title: hw_miner.sc
+*  Author: Team 4
+*  Date: 05/06/2015
+*  Description: Outer encapsulation of hardware miner behaviors.
+****************************************************************************/
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -9,7 +16,6 @@ import "hw_timer";
 import "hw_config";
    
 event e_reset;
-event e_ready;
 event e_abort;
 event e_tout;
 event e_tstart;
@@ -21,20 +27,22 @@ behavior HW_Miner(i_receiver   c_abort,
                   i_sender     c_perf,
                   i_receiver   c_profile,
                   i_receiver   c_reset) {
+  	               
+  c_double_handshake c_pe_profile;
   	                      
   HW_Hash hw_hash(c_blk_hdr, 
 	                c_nonce, 
 	                c_perf,
+	                c_pe_profile,
 	                e_abort,
-	                e_ready,
 	                e_reset,
 	                e_tout,
 	                e_tstart,
 	                e_tstop);  	                      
 	  
   HW_Config hw_config(c_profile,
+                      c_pe_profile,
                       c_reset,
-                      e_ready,
                       e_reset); 	  
 	                      
   HW_Abort hw_abort(c_abort,
@@ -46,15 +54,13 @@ behavior HW_Miner(i_receiver   c_abort,
                     
                                               
   void main(void) {	                      
-  	      
-  	printf("\nHW_Miner:par{}");                         	
+  	                           	
   	par {
   	  hw_config.main();
   	  hw_abort.main();
   	  hw_timer.main();
   	  hw_hash.main();	
-    }
-    printf("HW_Miner:threads stopped\n");  	
+    }	
     
   } // end HW_Miner.main()
 

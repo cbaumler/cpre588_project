@@ -1,0 +1,157 @@
+
+
+=================== ABORT ==================
+== Cum Hashes = 0
+============================================
+
+
+=============== BLOCK RECORD ===============
+== Block Number = 1
+== Block Hashes = 66228
+== Block Energy = 112.88 joules
+== Block Time   = 6.64283 seconds
+==    Idle time = 0 seconds
+==    Proc time = 6.64283 seconds
+== - - - - - CUMMULATIVE SUMMARY - - - - - -
+== Cum Hashes = 66228
+== Cum Energy = 112.88 joules
+== Cum Time   = 6.64283 seconds
+==    Idle time = 0 seconds
+==    Proc time = 6.64283 seconds
+== Cum Performance
+==    MH/j      = 0.00058671
+==    MH/s      = 0.00996985
+============= END BLOCK RECORD =============
+
+
+=============== BLOCK RECORD ===============
+== Block Number = 2
+== Block Hashes = 70808
+== Block Energy = 120.717 joules
+== Block Time   = 7.1066 seconds
+==    Idle time = 0.00438834 seconds
+==    Proc time = 7.10221 seconds
+== - - - - - CUMMULATIVE SUMMARY - - - - - -
+== Cum Hashes = 137036
+== Cum Energy = 233.597 joules
+== Cum Time   = 13.7494 seconds
+==    Idle time = 0.00438834 seconds
+==    Proc time = 13.745 seconds
+== Cum Performance
+==    MH/j      = 0.000586633
+==    MH/s      = 0.00996667
+============= END BLOCK RECORD =============
+
+
+=============== BLOCK RECORD ===============
+== Block Number = 3
+== Block Hashes = 93957
+== Block Energy = 160.151 joules
+== Block Time   = 9.42535 seconds
+==    Idle time = 0.00123683 seconds
+==    Proc time = 9.42411 seconds
+== - - - - - CUMMULATIVE SUMMARY - - - - - -
+== Cum Hashes = 230993
+== Cum Energy = 393.748 joules
+== Cum Time   = 23.1748 seconds
+==    Idle time = 0.00562518 seconds
+==    Proc time = 23.1691 seconds
+== Cum Performance
+==    MH/j      = 0.000586651
+==    MH/s      = 0.00996743
+============= END BLOCK RECORD =============
+
+
+=============== BLOCK RECORD ===============
+== Block Number = 4
+== Block Hashes = 62450
+== Block Energy = 106.462 joules
+== Block Time   = 6.26683 seconds
+==    Idle time = 0.0029443 seconds
+==    Proc time = 6.26388 seconds
+== - - - - - CUMMULATIVE SUMMARY - - - - - -
+== Cum Hashes = 293443
+== Cum Energy = 500.21 joules
+== Cum Time   = 29.4416 seconds
+==    Idle time = 0.00856947 seconds
+==    Proc time = 29.433 seconds
+== Cum Performance
+==    MH/j      = 0.00058664
+==    MH/s      = 0.00996695
+============= END BLOCK RECORD =============
+
+
+=============== BLOCK RECORD ===============
+== Block Number = 5
+== Block Hashes = 1328
+== Block Energy = 2.27304 joules
+== Block Time   = 0.134569 seconds
+==    Idle time = 0.0013679 seconds
+==    Proc time = 0.133202 seconds
+== - - - - - CUMMULATIVE SUMMARY - - - - - -
+== Cum Hashes = 294771
+== Cum Energy = 502.483 joules
+== Cum Time   = 29.5762 seconds
+==    Idle time = 0.00993737 seconds
+==    Proc time = 29.5662 seconds
+== Cum Performance
+==    MH/j      = 0.000586629
+==    MH/s      = 0.0099665
+============= END BLOCK RECORD =============
+
+
+=============== BLOCK RECORD ===============
+== Block Number = 6
+== Block Hashes = 6257
+== Block Energy = 10.6977 joules
+== Block Time   = 0.632322 seconds
+==    Idle time = 0.00472946 seconds
+==    Proc time = 0.627592 seconds
+== - - - - - CUMMULATIVE SUMMARY - - - - - -
+== Cum Hashes = 301028
+== Cum Energy = 513.181 joules
+== Cum Time   = 30.2085 seconds
+==    Idle time = 0.0146668 seconds
+==    Proc time = 30.1938 seconds
+== Cum Performance
+==    MH/j      = 0.000586593
+==    MH/s      = 0.00996501
+============= END BLOCK RECORD =============
+
+
+=============== BLOCK RECORD ===============
+== Block Number = 7
+== Block Hashes = 6386
+== Block Energy = 10.9104 joules
+== Block Time   = 0.644239 seconds
+==    Idle time = 0.00370769 seconds
+==    Proc time = 0.640531 seconds
+== - - - - - CUMMULATIVE SUMMARY - - - - - -
+== Cum Hashes = 307414
+== Cum Energy = 524.091 joules
+== Cum Time   = 30.8527 seconds
+==    Idle time = 0.0183745 seconds
+==    Proc time = 30.8344 seconds
+== Cum Performance
+==    MH/j      = 0.000586566
+==    MH/s      = 0.00996391
+============= END BLOCK RECORD =============
+
+
+=============== BLOCK RECORD ===============
+== Block Number = 8
+== Block Hashes = 3727
+== Block Energy = 6.36202 joules
+== Block Time   = 0.375206 seconds
+==    Idle time = 0.00137876 seconds
+==    Proc time = 0.373827 seconds
+== - - - - - CUMMULATIVE SUMMARY - - - - - -
+== Cum Hashes = 311141
+== Cum Energy = 530.453 joules
+== Cum Time   = 31.2279 seconds
+==    Idle time = 0.0197533 seconds
+==    Proc time = 31.2082 seconds
+== Cum Performance
+==    MH/j      = 0.000586557
+==    MH/s      = 0.00996355
+============= END BLOCK RECORD =============

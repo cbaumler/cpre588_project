@@ -19,7 +19,10 @@ behavior PerformanceMonitor (i_receiver c_perf)
   void main (void)
   {
     FILE *fout;
-    PerformanceData perf_data;
+    
+    PerformanceData perf;
+    PerformanceData past_perf;
+        
     int idx;
     int hashrate, energy_efficiency, cost_efficiency;
 
@@ -29,52 +32,68 @@ behavior PerformanceMonitor (i_receiver c_perf)
     while (true)
     {
       // Receive the performance data
-      c_perf.receive(&perf_data, sizeof(perf_data));
-      for (idx = 0; idx < NUM_CODE_BLOCKS; idx++)
-      {
-        perf_data.codeblocks[idx].time = idx;
-        perf_data.codeblocks[idx].power = idx;
-        perf_data.mined_blocks[idx].time = idx;
-        perf_data.mined_blocks[idx].power = idx;
-        perf_data.num_mined_blocks = NUM_CODE_BLOCKS;
-        perf_data.total_power = 360;
-        perf_data.total_sim_time = 1;
-        perf_data.total_num_hashes = 180000000;
-        perf_data.total_cost = 299;
+      c_perf.receive(&perf, sizeof(perf));
+      
+      if (perf.flag == 0) {
+      	
+        printf("\n\n"); 
+        printf("================ QUICK LOOK ================\n");      
+        printf("Monitor:cum blocks    = %g\n", perf.cum_blocks);                     
+        printf("Monitor:MH/j          = %g\n", perf.mhash_per_j); 
+        printf("Monitor:MH/s          = %g\n\n", perf.mhash_per_s);  
+  
+        fprintf(fout, "\n\n");
+        fprintf(fout, "=============== BLOCK RECORD ===============\n");
+        fprintf(fout, "== Block Number = %g\n", perf.cum_blocks);          
+        fprintf(fout, "== Block Hashes = %g\n", 
+          perf.cum_hashes - past_perf.cum_hashes);        
+        fprintf(fout, "== Block Energy = %g joules\n", 
+          perf.cum_energy - past_perf.cum_energy);  
+        fprintf(fout, "== Block Time   = %g seconds\n", 
+          perf.cum_time - past_perf.cum_time); 
+        fprintf(fout, "==    Idle time = %g seconds\n", 
+          perf.cum_idle_time - past_perf.cum_idle_time); 
+        fprintf(fout, "==    Proc time = %g seconds\n", 
+          perf.cum_proc_time - past_perf.cum_proc_time);
+        fprintf(fout, "== - - - - - CUMMULATIVE SUMMARY - - - - - -\n");  
+        fprintf(fout, "== Cum Hashes = %g\n", perf.cum_hashes);        
+        fprintf(fout, "== Cum Energy = %g joules\n", perf.cum_energy);  
+        fprintf(fout, "== Cum Time   = %g seconds\n", perf.cum_time); 
+        fprintf(fout, "==    Idle time = %g seconds\n", perf.cum_idle_time); 
+        fprintf(fout, "==    Proc time = %g seconds\n", perf.cum_proc_time);                
+        fprintf(fout, "== Cum Performance\n");         
+        fprintf(fout, "==    MH/j      = %g\n", perf.mhash_per_j); 
+        fprintf(fout, "==    MH/s      = %g\n", perf.mhash_per_s);
+        fprintf(fout, "============= END BLOCK RECORD =============\n");      
+        
+        fflush(fout);
+        
+        past_perf = perf;
+      
       }
-
-      // Write code performance data to log
-      fprintf(fout, "\nCode Performance Breakdown:\n\n");
-      for (idx = 0; idx < NUM_CODE_BLOCKS; idx++)
-      {
-        fprintf(fout, "Code Block  %2d: Time=%10d  Power=%10d\n", idx+1,
-          perf_data.codeblocks[idx].time,
-          perf_data.codeblocks[idx].power);
+      else if (perf.flag == 1) {
+        printf("\n\n"); 
+        printf("=================== ABORT ==================\n");      
+        printf("Monitor:cum blocks    = %g\n", perf.cum_blocks); 
+        
+        fprintf(fout, "\n\n");
+        fprintf(fout, "=================== ABORT ==================\n"); 
+        fprintf(fout, "== Cum Hashes = %g\n", perf.cum_hashes); 
+        fprintf(fout, "============================================\n");         
+        fflush(fout);        
+                       	
       }
-
-      // Write block performance data to log
-      fprintf(fout, "\nBlock Performance Breakdown:\n\n");
-      fprintf(fout, "Total Blocks Mined: %d\n\n", perf_data.num_mined_blocks);
-      for (idx = 0; idx < perf_data.num_mined_blocks; idx++)
-      {
-        fprintf(fout, "Mined Block: %2d: Time=%10d  Power=%10d\n", idx+1,
-          perf_data.mined_blocks[idx].time,
-          perf_data.mined_blocks[idx].power);
+      else {
+        printf("\n\n"); 
+        printf("================= TIMEOUT ==================\n");      
+        printf("Monitor:cum blocks    = %g\n", perf.cum_blocks);
+        
+        fprintf(fout, "\n\n");
+        fprintf(fout, "================= TIMEOUT ==================\n"); 
+        fprintf(fout, "== Cum Hashes = %g\n", perf.cum_hashes); 
+        fprintf(fout, "============================================\n");         
+        fflush(fout);          
       }
-
-      // Write overall performance data to log
-      hashrate = perf_data.total_num_hashes / perf_data.total_sim_time;
-      energy_efficiency = hashrate / perf_data.total_power;
-      cost_efficiency = hashrate / perf_data.total_cost;
-
-      fprintf(fout, "\nOverall Performance:\n\n");
-      fprintf(fout, "Total Power Usage : %10d Watts\n", perf_data.total_power);
-      fprintf(fout, "Total Cost        : %10d Dollars\n", perf_data.total_cost);
-      fprintf(fout, "Hash Rate         : %10d Hashes/Second\n", hashrate);
-      fprintf(fout, "Energy Efficiency : %10d Hashes/Joule\n", energy_efficiency);
-      fprintf(fout, "Cost Efficiency   : %10d Hashes/Second/Dollar\n", cost_efficiency);
-
-      fflush(fout);
     }
   }
 };
@@ -93,7 +112,7 @@ behavior CoreMonitor (i_receiver c_core_log)
     while (true)
     {
       // Receive log messages from the Bitcoin core
-      c_core_log.receive(log_msg, sizeof(log_msg));
+      c_core_log.receive(&log_msg, sizeof(log_msg));
 
       // Write messages to the log
       fprintf(fout, "%s", log_msg);
@@ -116,7 +135,7 @@ behavior WalletMonitor (i_receiver c_wallet_log)
     while (true)
     {
       // Receive log messages from the wallet
-      c_wallet_log.receive(log_msg, sizeof(log_msg));
+      c_wallet_log.receive(&log_msg, sizeof(log_msg));
 
       // Write messages to the log
       fprintf(fout, "%s", log_msg);

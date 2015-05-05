@@ -173,27 +173,15 @@ typedef struct
 
 typedef struct {
 
-  // Time statistics
-  long long time_total;     // Time since start of simulation
-  long long time_blk_start; // Time at start of block processing
-  long long time_blk_stop;  // Time at end of current block processing
-  long long time_blk;       // Time for processing current block
-
-  // Hash count statistics
-  long hash_total;          // Total hash count since start of simulation
-  long hash_blk;            // Current hash count accumulator for current block
-
-  // Power statistics
-  long power_total;         // Total power since start of simulation
-  long power_blk;           // Current power accumulator for current block
-
-  Stats codeblocks[NUM_CODE_BLOCKS];
-  Stats mined_blocks[MAX_MINED_BLOCKS];
-  int num_mined_blocks;
-  int total_power;
-  int total_num_hashes;
-  int total_sim_time;
-  int total_cost;
+  int flag;  // 0 = valid; 1 = abort; 2 = timeout
+  double cum_time;
+  double cum_idle_time;
+  double cum_proc_time;
+  double cum_blocks;
+  double cum_hashes;
+  double cum_energy;
+	double mhash_per_j;
+  double mhash_per_s;  
 
 } PerformanceData;
 

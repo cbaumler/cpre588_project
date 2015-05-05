@@ -2,7 +2,8 @@
 *  Title: hw_abort.sc
 *  Author: Team 4
 *  Date: 05/06/2015
-*  Description:
+*  Description: Accepts abort command vis channel and issues abort
+*    notification to halt any in-progress hashing.
 ****************************************************************************/
 
 #include <stdlib.h>
