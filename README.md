@@ -1,5 +1,3 @@
-# cpre588_project
-A class project for CPRE 588
-
-Overview:
-A Bitcoin mining node modeled using SpecC
+#BITCOIN MINING NODE SIMULATION
+ 		 
+Please see the [Wiki](https://github.com/cbaumler/cpre588_project/wiki) for documentation.
